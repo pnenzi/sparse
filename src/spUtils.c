@@ -48,7 +48,7 @@
 static char copyright[] =
     "Sparse1.4: Copyright (c) 1985-2003 by Kenneth S. Kundert";
 static char RCSid[] =
-    "@(#)$Header: /cvsroot/sparse/src/spUtils.c,v 1.4 2003/06/30 19:40:52 kundert Exp $";
+    "@(#)$Header: /cvsroot-fuse/sparse/src/spUtils.c,v 1.4 2003/06/30 19:40:52 kundert Exp $";
 #endif
 
 
