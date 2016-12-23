@@ -1,0 +1,523 @@
+ Geoffrey Coram - 2007-01-11
+
+Ken -
+In QuicklySearchDiagonal, the Pivot is compared to the other elements in its column to see if the ratio is greater than RelThreshold.
+
+Why isn't there a similar comparison to the other elements in the row?  For circuit simulation, it's not a good assumption that the matrix is symmetric.
+
+-Geoffrey
+
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+
+ Geoffrey Coram - 2007-01-12
+
+spConfig.h says that defining MODIFIED_MARKOWITZ has this affect:
+
+* First, under modified
+* Markowitz, the search for a pivot can be terminated early if a
+* adequate (in terms of sparsity) pivot candidate is found.
+
+It seems this will only happen if there is a huge number of ties of Markowitz product is found, i.e.,
+  if (NumberOfTies >= MinMarkowitzProduct * TIES_MULTIPLIER)
+
+So, with TIES_MULTIPLIER = 5 (by default), one could have 20 ties of MMP=4 and this would terminate the search without finding a possible MP of 1 that comes later.
+
+-Geoffrey
+
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+
+ Geoffrey Coram - 2008-02-19
+
+The comments for spDeterminant are wrong:
+
+*  \param piDeterminant
+*      The imaginary portion of the determinant.  When the matrix is real
+*      this pointer need not be supplied, nothing will be returned.   This
+*      number is scaled to be greater than or equal to 1.0 and less than 10.0.
+
+Actually, what happens is that the determinant is scaled so that its NORM is between 1.0 and 10.0
+
+The imaginary (or real) part may be much smaller than 1.0, though you are guaranteed that it won't be larger than 10.
+
+
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+
+
+Stuart Thorncraft - 2004-01-18
+
+Hi,
+
+I have been playing around with Sparse 1.4. A couple of questions / comments:
+
+* There doesn't appear to be any support for basic matrix operations like multiply and add - is this right?
+
+* Is it possible to create non-square sparse matrices?
+
+* I wrote some code (see below) to iterate over a sparse matrix to investigate the elements contained in the matrix.  I noticed that the spFindElement(...) function seems to return the element residing in a given memory location rather than the position within the matrix.  This is inconsistent with how the function spGetElement(...) works.  Is there another way I can get the elements in the matrix without having to create a new entry in the sparse matrix? Or is my use of spFindElement(...) completely wrong.  The output of the program is summarised below.
+
+Thanks very much for your assistance
+
+Stuart
+
+-------------OUTPUT--------------
+
+Size of matrix = 3 x 3.
+
+Matrix before factorization:
+             3         1         2
+
+   3         1       ...       ...
+            2j
+   1       ...       ...       0.3
+                                1j
+   2       ...         4       ...
+                    0.5j
+
+Largest element in matrix = 4.5.
+Smallest element in matrix = 1.3.
+
+Largest pivot element = 3.
+Smallest pivot element = 3.
+
+Density = 33.33%.
+
+( 1, 1) = 1.000  |  2.000j
+( 2, 3) = 0.300  |  1.000j
+( 3, 2) = 4.000  |  0.500j
+
+-------------------------
+
+----------CODE---------
+
+#include <stdio.h>
+#include "spMatrix.h"
+
+void main()
+{
+    spMatrix pM;
+    spElement * pE;
+    spError err;
+    pM = spCreate(3,1,&err);
+
+    pE = spGetElement(pM,3,3);
+    spADD_COMPLEX_ELEMENT(pE,1.0,2.0);
+
+    pE = spGetElement(pM,1,2);
+    spADD_COMPLEX_ELEMENT(pE,0.3,1.0);
+
+    pE = spGetElement(pM,2,1);
+    spADD_COMPLEX_ELEMENT(pE,4.0,0.5);
+
+    spPrint(pM,1,1,1);
+
+    for (int i=1; i<=3; ++i)
+    {
+        for (int j=1; j<=3; ++j)
+        {
+            pE = spFindElement(pM,i,j);
+            if (pE != 0)
+                printf("(%2d,%2d) = %4.3f  |  %4.3fj\n", i, j, *pE, *(pE+1));
+        }
+    }
+}
+ 
+
+    Ken Kundert
+    Ken Kundert - 2004-01-18
+
+    Stuart,
+    1. You are correct, there is no support for basic matrix operations like multiply and add. Just matrix factorization and back-solve, matrix-vector multiplication, and limited support for transposing.
+
+    2. There is no support for non-square matrices.
+
+    3. I do not understand your comment about the inconsistency between spGetElement() and spFindElement(). They seem quite consistent to me. They take the same arguments and provide the same return value. The only difference is that one creates the element if it does not exist, and the other does not.
+
+    The function spFindElement() was added on to the program as a result of user request. I personally have never found a use for it. Be aware that it is not coded very efficiently. Each call will result in either a row or column search.
+
+    -Ken
+     
+
+    Stuart Thorncraft
+    Stuart Thorncraft - 2004-01-19
+
+    Hi, thanks for the responses. 
+
+    In relation to the third point:
+
+    The code I provided puts the following into a sparse matrix:
+
+    1+2j at position (3,3)
+    0.3+1.0j at position (1,2) &
+    4+0.5j at position (2,1)
+
+    Then when I execute the spFindElement command on element (1,1) I get a non-null spElement back, indicating that something must be in position (1,1) but there isn't.  If instead, I was to execute the spGetElement command for position (1,1), I would end up putting a 0+0j into the sparse matrix at position (1,1). 
+
+    The results returned by spFindElement seem to depend on the order in which you place elements into a Sparse matrix, while spGetElement doesn't.  Is this intended?
+     
+
+        Ken Kundert
+        Ken Kundert - 2004-01-19
+
+        Stuart,
+            I think you have found a bug. As I mentioned last time, spFindElement() has only recently been made available for external use; it was originally an internal utility function. In its roll as an internal utility, it used only internal row and column numbers. When it was opened up, I don't believe I added the code to properly translate the external row and column numbers to internal row and column numbers before I performed the look up.
+
+        So now my choice is to either remove the function or fix it. Do you need it?
+
+        -Ken
+         
+
+    Stuart Thorncraft
+    Stuart Thorncraft - 2004-01-20
+
+    Ken,
+    Presently I am looking at writing some helper functions to add/multiply the sparse matrices. Given that I am looking at using the code in a situation where performance is not super-critical, I was using the spFindElement in a fairly dumb algorithm.  So fixing its implementation is not really critical.
+
+    What is the best way to iterate over the complex elements of a sparse matrix?  I guess I should take a look at the code behind spPrint(...)
+
+    Thanks
+    Stuart
+     
+
+        Ken Kundert
+        Ken Kundert - 2004-01-23
+
+        spPrint() is probably not the best function to use as an example. Try spMultiply() and spMultiplyTransposed(). One shows how step through the matrix by rows, the other by columns.
+
+        -Ken
+         
+
+    Smeuuh
+    Smeuuh - 2008-08-15
+
+    Hi,
+    Not sure anyone will actually read this message, but well :)
+    Thank you for spFindElement, I actually wrote it myself in sparse 1.3, for debugging purposes.
+    spFindElement doesn't translate indices, which means its behavior is inconsistent with spGetElement.
+    The fix is quite simple, just add the beginning of spGetElement to the beginning of spFindElement. It's quick, and it works fine here.
+    Thank you a lot for the library, it gives us a big speedup over our naïve dense solver in our simulator (http://edacious.hypertriton.com)
+    Antoine Levitt
+
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+
+
+    dslee - 2004-11-03
+
+    Hi,
+    I have a question about running time of Sparse 1.4b.
+
+    I tried to solve Ax=b with A being a 10^4 x 10^4 matrix and the number of nonzero elements ~ 5x10^4, and
+    it worked successfully,
+    but it took about 10 minutes on the  machine (AMD, CPU 2GHz, RAM 1G).
+
+    Is there any way to reduce the running time ?
+
+    Thanks in advance.
+     
+
+        Ken Kundert
+        Ken Kundert - 2004-11-20
+
+        Sparse is not optimized for factoring a single matrix of a given structure. When it first factors a matrix it determines the ordering and builds its internal data structures. It is much faster on all subsequent factorizations of matrices with the same structure. Thus it is suitable for use in an ODE solver, where you tend to see thousands of matrices of identical structure.
+         
+
+    michael
+    michael - 2009-11-30
+
+    I am interested in solving many similar systems. however I am not sure about the spStripFills() function. It is not called in any sparse routines. I tried to added it in the test routine, and got panics. Anyone have an example of how to use it?
+
+    examples on add/delete rows/columns are also welcome!
+     
+
+    Ken Kundert
+    Ken Kundert - 2009-11-30
+
+    spStripFills would be called after the matrix has been factored with either spOrderAndFactor or spFactor. If you need more help, give some detail on the panics. There should be no panics, just assertion errors that should indicate what you are doing wrong.
+
+    -Ken
+
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+
+    michael - 2009-11-30
+
+    I am wondering why sparse is faster on solving circuit problems? What's the fundamental difference between Sparse and a generic LU linear system solver?
+     
+
+    Ken Kundert
+    Ken Kundert - 2009-12-01
+
+    Sparse 's pivoting algorithms take advantage of the fact that the circuit matricies generally have values on the diagonals, and those values are often the largest values in the row. This reduces the time required to perform pivoting and generally results in a more robust reordering.
+
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+
+
+
+    michael
+    michael - 2009-11-30
+
+    It seems that the code spStripFills() only unlink the fill in elements. Does Sparse try to reuse them anywhere? What is a calling sequence with spStripFills() and other functions?
+
+    On the other hand, all fill ins will be freed since it is registered. So this is not a memory leaking problem.
+     
+
+    Ken Kundert
+    Ken Kundert - 2009-12-01
+
+    Yes, it will reuse them.
+     
+
+    michael
+    michael - 2009-12-01
+
+    Dear Kundert, thanks for your replies to my questions. I have been reading your code since the day before yesterday. I like this well designed program.  Would you please suggest a calling sequence involving spStripFills()? I am trying to understand this piece from spGetFillin(), especially how could  (Matrix->LastFillinListNode->Next != NULL)?
+
+        if (Matrix->FillinsRemaining == 0)
+        {   pListNode = Matrix->LastFillinListNode;
+
+            if (pListNode->Next != NULL)
+            {   Matrix->LastFillinListNode = pListNode = pListNode->Next;
+                Matrix->FillinsRemaining = pListNode->NumberOfFillinsInList;
+                Matrix->NextAvailFillin = pListNode->pFillinList;
+            }
+     
+
+    Ken Kundert
+    Ken Kundert - 2009-12-01
+
+    You normally do not need to use spStripFills. You would only use it if you feel that the matrix became bloated with fillins, perhaps because earlier matrices became ill-conditioned.
+     
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+
+ michael - 2009-12-01
+
+From the spDefs.c, the member Element in Matrix Frame is
+*  Elements  (int)
+*      The number of original elements (total elements minus fill ins)
+*      present in matrix.
+
+However in the spStripFills(), I see
+Matrix->Elements -= Matrix->Fillins;
+
+Since Matrix-Elements is not the total number of elements in the matrix, why would we want to deduct from it the number of fill ins?
+
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+
+
+    michael
+    michael - 2009-12-01
+
+    <pre><code>
+    #include <stdio.h>
+    #include <math.h>
+    #include "spMatrix.h"
+
+    int
+    main( int argc, char **argv )
+    {
+    spMatrix A;
+    double *value;
+    spError err;
+
+    double f, omega;
+
+    /* Create and build the matrix. */
+        A = spCreate( 2, 0, &err );
+        if (err >= spFATAL) {
+            spErrorMessage( A, stderr, argv );
+    return 1;
+        }
+
+        double AA={1, 20, 300, 4};
+
+        int i,j;
+        for ( i=0;i<2;i++){
+        for ( j=0;j<2;j++){
+        spADD_REAL_ELEMENT(spGetElement(A,i+1,j+1),AA_);
+        }
+        }
+
+       double b={5,6};
+       double x;
+
+       spPrint(A,0,1,1);
+
+    /* Solve the matrix equations Ax = b for x. */
+            err = spOrderAndFactor( A,b,0.01,0.01,1 );
+
+    if (err >= spFATAL) {
+        spErrorMessage( A, stderr, argv );
+        return 1;
+    }
+
+        spPrint(A,1,1,0);
+
+    spSolve( A, (spREAL *)b, (spREAL *)x );
+    printf( "x1 = %f, x2 = %f\n", x,x );
+    spMultiply(A,b,x);
+
+    /* change A to 9 */
+    spADD_REAL_ELEMENT(spGetElement(A,1,1),1000);
+    spPrint(A,0,1,0);
+    spPrint(A,1,1,0);
+    spFactor(A);
+    spSolve(A,(spREAL *)b, (spREAL *)x);
+    printf( "x1 = %f, x2 = %f\n", x,x );
+        return 0;
+    }
+    </code></pre>_
+     
+
+    Ken Kundert
+    Ken Kundert - 2009-12-01
+
+    In what sense?
+     
+
+    michael
+    michael - 2009-12-01
+    here is the output on my mac os2:
+
+    MATRIX SUMMARY
+
+    Size of matrix = 2 x 2.
+
+    Matrix before factorization:
+                 1         2
+
+       1         1        20
+       2       300         4
+
+    Largest element in matrix = 300.
+    Smallest element in matrix = 1.
+
+    Largest pivot element = 4.
+    Smallest pivot element = 1.
+
+    Density = 100.00%.
+
+          0.25        75
+            20 -0.000667
+
+    x1 = -1.996880, x2 = -0.000667
+    sparse: internal error detected in file `spUtils.c' at line 619.
+        Matrix must not be factored.
+    Abort trap
+     
+
+    Ken Kundert
+    Ken Kundert - 2009-12-01
+
+    Well, as it says, the matrix must not be factored. If you look at line 619 in spUtils.c, you will see that it is in spMultiply. Hence, once the matrix has been factored you cannot use spMultiply.
+     
+
+    michael
+    michael - 2009-12-01
+
+    sorry, let me start from ABC. I would like to solve Ax=b, where
+             
+    A=  b ='
+
+    Apprantly the answer is x=, however the following code gives me different answer. What's wrong with my code?
+
+    <pre><code>
+    #include <stdio.h>
+    #include <math.h>
+    #include "spMatrix.h"
+
+    int
+    main( int argc, char **argv )
+    {
+    spMatrix A;
+    double *value;
+    spError err;
+
+    double f, omega;
+
+    /* Create and build the matrix. */
+        A = spCreate( 2, 0, &err );
+        if (err >= spFATAL) {
+            spErrorMessage( A, stderr, argv );
+    return 1;
+        }
+
+        double AA={1, 2, 3, 4};
+
+        int i,j;
+        for ( i=0;i<2;i++){
+        for ( j=0;j<2;j++){
+        spADD_REAL_ELEMENT(spGetElement(A,i+1,j+1),AA_);
+        }
+        }
+
+       double b={1,2};
+       double x;
+
+       spPrint(A,0,1,1);
+
+    /* Solve the matrix equations Ax = b for x. */
+            err = spOrderAndFactor( A,b,0.01,0.01,1 );
+
+    if (err >= spFATAL) {
+        spErrorMessage( A, stderr, argv );
+        return 1;
+    }
+
+        spPrint(A,1,1,0);
+
+    spSolve( A, (spREAL *)b, (spREAL *)x );
+    printf( "x1 = %f, x2 = %f\n", x,x );
+    /* //spMultiply(A,b,x); */
+
+    /* /\* change A to 1000 *\/ */
+    /* spADD_REAL_ELEMENT(spGetElement(A,1,1),1000); */
+    /* spPrint(A,0,1,0); */
+    /* spPrint(A,1,1,0); */
+    /* spFactor(A); */
+    /* spSolve(A,(spREAL *)b, (spREAL *)x); */
+    /* printf( "x1 = %f, x2 = %f\n", x,x ); */
+        return 0;
+    }
+       
+    </code></pre>
+    output:
+
+    <pre><code>
+    MATRIX SUMMARY
+
+    Size of matrix = 2 x 2.
+
+    Matrix before factorization:
+                 1         2
+
+       1         1         2
+       2         3         4
+
+    Largest element in matrix = 4.
+    Smallest element in matrix = 1.
+
+    Largest pivot element = 4.
+    Smallest pivot element = 1.
+
+    Density = 100.00%.
+
+             1         2
+             3      -0.5
+
+    x1 = 0.000000, x2 = -3.000000
+
+    <code></pre>
+    _
+
+
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+
+
+
