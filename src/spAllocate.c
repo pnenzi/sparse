@@ -4,18 +4,11 @@
  *  Author:                     Advising professor:
  *      Kenneth S. Kundert          Alberto Sangiovanni-Vincentelli
  *      UC Berkeley
- */
-/*!\file
- *  This file contains functions for allocating and freeing matrices, configuring them, and for
- *  accessing global information about the matrix (size, error status, etc.).
  *
- *  Objects that begin with the \a spc prefix are considered private
- *  and should not be used.
+ *  This file contains the allocation and deallocation routines for the
+ *  sparse matrix routines.
  *
- * \author
- *  Kenneth S. Kundert <kundert@users.sourceforge.net>
- */
-/*  >>> User accessible functions contained in this file:
+ *  >>> User accessible functions contained in this file:
  *  spCreate
  *  spDestroy
  *  spErrorState
@@ -40,14 +33,24 @@
 /*
  *  Revision and copyright information.
  *
- *  Copyright (c) 1985-2003 by Kenneth S. Kundert
+ *  Copyright (c) 1985-1993,89,90
+ *  by Kenneth S. Kundert and the University of California.
+ *
+ *  Permission to use, copy, modify, and distribute this software and
+ *  its documentation for any purpose and without fee is hereby granted,
+ *  provided that the copyright notices appear in all copies and
+ *  supporting documentation and that the authors and the University of
+ *  California are properly credited.  The authors and the University of
+ *  California make no representations as to the suitability of this
+ *  software for any purpose.  It is provided `as is', without express
+ *  or implied warranty.
  */
 
 #ifndef lint
 static char copyright[] =
-    "Sparse1.4: Copyright (c) 1985-2003 by Kenneth S. Kundert";
+    "Sparse1.3: Copyright (c) 1985-1993 by Kenneth S. Kundert";
 static char RCSid[] =
-    "@(#)$Header: /cvsroot/sparse/src/spAllocate.c,v 1.3 2003/06/29 04:19:52 kundert Exp $";
+    "@(#)$Header: /cvsroot/sparse/src/spAllocate.c,v 1.1.1.1 2003/06/05 07:06:51 kundert Exp $";
 #endif
 
 
@@ -90,48 +93,55 @@ char spcMatrixMustNotBeFactored[] = "Matrix must not be factored";
  *  Function declarations
  */
 
-static spError ReserveElements( MatrixPtr, int );
-static void InitializeElementBlocks( MatrixPtr, int, int );
-static void RecordAllocation( MatrixPtr, void* );
-static void AllocateBlockOfAllocationList( MatrixPtr );
+static spError ReserveElements spcARGS(( MatrixPtr, int ));
+static InitializeElementBlocks spcARGS(( MatrixPtr, int, int ));
+static spError RecordAllocation spcARGS(( MatrixPtr, char* ));
+static AllocateBlockOfAllocationList spcARGS(( MatrixPtr ));
 
 
 
-/*!
+/*
+ *  MATRIX ALLOCATION
+ *
  *  Allocates and initializes the data structures associated with a matrix.
  *
- *  \return
- *  A pointer to the matrix is returned cast into \a spMatrix (typically a
- *  pointer to a void).  This pointer is then passed and used by the other
- *  matrix routines to refer to a particular matrix.  If an error occurs,
- *  the \a NULL pointer is returned.
+ *  >>> Returned:
+ *  A pointer to the matrix is returned cast into the form of a pointer to
+ *  a character.  This pointer is then passed and used by the other matrix
+ *  routines to refer to a particular matrix.  If an error occurs, the NULL
+ *  pointer is returned.
  *
- *  \param Size
- *      Size of matrix or estimate of size of matrix if matrix is \a EXPANDABLE.
- *  \param Complex
- *      Type of matrix.  If \a Complex is 0 then the matrix is real, otherwise
+ *  >>> Arguments:
+ *  Size  <input>  (int)
+ *      Size of matrix or estimate of size of matrix if matrix is EXPANDABLE.
+ *  Complex  <input>  (int)
+ *      Type of matrix.  If Complex is 0 then the matrix is real, otherwise
  *      the matrix will be complex.  Note that if the routines are not set up
- *      to handle the type of matrix requested, then an \a spPANIC error will occur.
+ *      to handle the type of matrix requested, then a spPANIC error will occur.
  *      Further note that if a matrix will be both real and complex, it must
  *      be specified here as being complex.
- *  \param pError
- *      Returns error flag, needed because function \a spErrorState() will
- *      not work correctly if \a spCreate() returns \a NULL. Possible errors
- *      include \a  spNO_MEMORY and \a spPANIC.
- */
-/*  >>> Local variables:
+ *  pError  <output>  (spError *)
+ *      Returns error flag, needed because function spErrorState() will not work
+ *      correctly if spCreate() returns NULL.
+ *
+ *  >>> Local variables:
  *  AllocatedSize  (int)
  *      The size of the matrix being allocated.
  *  Matrix  (MatrixPtr)
  *      A pointer to the matrix frame being created.
+ *
+ *  >>> Possible errors:
+ *  spNO_MEMORY
+ *  spPANIC
+ *  Error is cleared in this routine.
  */
 
 spMatrix
-spCreate(
-    int  Size,
-    int  Complex,
-    spError *pError
-)
+spCreate( Size, Complex, pError )
+
+int  Size;
+BOOLEAN  Complex;
+spError *pError;
 {
 register  unsigned  SizePlusOne;
 register  MatrixPtr  Matrix;
@@ -201,7 +211,7 @@ int  AllocatedSize;
     Matrix->ElementsRemaining = 0;
     Matrix->FillinsRemaining = 0;
 
-    RecordAllocation( Matrix, (void *)Matrix );
+    RecordAllocation( Matrix, (char *)Matrix );
     if (Matrix->Error == spNO_MEMORY) goto MemoryError;
 
 /* Take out the trash. */
@@ -313,7 +323,9 @@ MemoryError:
  */
 
 ElementPtr
-spcGetElement( MatrixPtr Matrix )
+spcGetElement( Matrix )
+
+MatrixPtr Matrix;
 {
 ElementPtr  pElement;
 
@@ -322,7 +334,7 @@ ElementPtr  pElement;
 /* Allocate block of MatrixElements if necessary. */
     if (Matrix->ElementsRemaining == 0)
     {   pElement = ALLOC(struct MatrixElement, ELEMENTS_PER_ALLOCATION);
-        RecordAllocation( Matrix, (void *)pElement );
+        RecordAllocation( Matrix, (char *)pElement );
         if (Matrix->Error == spNO_MEMORY) return NULL;
         Matrix->ElementsRemaining = ELEMENTS_PER_ALLOCATION;
         Matrix->NextAvailElement = pElement;
@@ -370,12 +382,12 @@ ElementPtr  pElement;
  *  spNO_MEMORY
  */
 
-static void
-InitializeElementBlocks(
-    MatrixPtr Matrix,
-    int InitialNumberOfElements,
-    int NumberOfFillinsExpected
-)
+static
+InitializeElementBlocks( Matrix, InitialNumberOfElements,
+                         NumberOfFillinsExpected )
+
+MatrixPtr Matrix;
+int InitialNumberOfElements, NumberOfFillinsExpected;
 {
 ElementPtr  pElement;
 
@@ -383,21 +395,21 @@ ElementPtr  pElement;
 
 /* Allocate block of MatrixElements for elements. */
     pElement = ALLOC(struct MatrixElement, InitialNumberOfElements);
-    RecordAllocation( Matrix, (void *)pElement );
+    RecordAllocation( Matrix, (char *)pElement );
     if (Matrix->Error == spNO_MEMORY) return;
     Matrix->ElementsRemaining = InitialNumberOfElements;
     Matrix->NextAvailElement = pElement;
 
 /* Allocate block of MatrixElements for fill-ins. */
     pElement = ALLOC(struct MatrixElement, NumberOfFillinsExpected);
-    RecordAllocation( Matrix, (void *)pElement );
+    RecordAllocation( Matrix, (char *)pElement );
     if (Matrix->Error == spNO_MEMORY) return;
     Matrix->FillinsRemaining = NumberOfFillinsExpected;
     Matrix->NextAvailFillin = pElement;
 
 /* Allocate a fill-in list structure. */
     Matrix->FirstFillinListNode = ALLOC(struct FillinListNodeStruct,1);
-    RecordAllocation( Matrix, (void *)Matrix->FirstFillinListNode );
+    RecordAllocation( Matrix, (char *)Matrix->FirstFillinListNode );
     if (Matrix->Error == spNO_MEMORY) return;
     Matrix->LastFillinListNode = Matrix->FirstFillinListNode;
 
@@ -437,7 +449,9 @@ ElementPtr  pElement;
  */
 
 ElementPtr
-spcGetFillin( MatrixPtr Matrix )
+spcGetFillin( Matrix )
+
+MatrixPtr Matrix;
 {
 struct FillinListNodeStruct *pListNode;
 ElementPtr  pFillins;
@@ -463,14 +477,14 @@ ElementPtr  pFillins;
         {
 /* Allocate block of fill-ins. */
             pFillins = ALLOC(struct MatrixElement, ELEMENTS_PER_ALLOCATION);
-            RecordAllocation( Matrix, (void *)pFillins );
+            RecordAllocation( Matrix, (char *)pFillins );
             if (Matrix->Error == spNO_MEMORY) return NULL;
             Matrix->FillinsRemaining = ELEMENTS_PER_ALLOCATION;
             Matrix->NextAvailFillin = pFillins;
 
 /* Allocate a fill-in list structure. */
             pListNode->Next = ALLOC(struct FillinListNodeStruct,1);
-            RecordAllocation( Matrix, (void *)pListNode->Next );
+            RecordAllocation( Matrix, (char *)pListNode->Next );
             if (Matrix->Error == spNO_MEMORY) return NULL;
             Matrix->LastFillinListNode = pListNode = pListNode->Next;
 
@@ -503,7 +517,7 @@ ElementPtr  pFillins;
  *  >>> Arguments:
  *  Matrix  <input>    (MatrixPtr)
  *      Pointer to the matrix.
- *  AllocatedPtr  <input>  (void *)
+ *  AllocatedPtr  <input>  (char *)
  *      The pointer returned by malloc or calloc.  These pointers are saved in
  *      a list so that they can be easily freed.
  *
@@ -511,11 +525,11 @@ ElementPtr  pFillins;
  *  spNO_MEMORY
  */
 
-static void
-RecordAllocation(
-    MatrixPtr Matrix,
-    void *AllocatedPtr
-)
+static
+RecordAllocation( Matrix, AllocatedPtr )
+
+MatrixPtr Matrix;
+char  *AllocatedPtr;
 {
 /* Begin `RecordAllocation'. */
 /*
@@ -568,8 +582,10 @@ RecordAllocation(
  *  spNO_MEMORY
  */
 
-static void
-AllocateBlockOfAllocationList( MatrixPtr Matrix )
+static
+AllocateBlockOfAllocationList( Matrix )
+
+MatrixPtr Matrix;
 {
 register  int  I;
 register  AllocationListPtr  ListPtr;
@@ -594,7 +610,7 @@ register  AllocationListPtr  ListPtr;
     }
 
 /* Record allocation of space for allocation list on allocation list. */
-    Matrix->TopOfAllocationList->AllocatedPtr = (void *)ListPtr;
+    Matrix->TopOfAllocationList->AllocatedPtr = (char *)ListPtr;
     Matrix->RecordsRemaining = ELEMENTS_PER_ALLOCATION;
 
     return;
@@ -607,13 +623,16 @@ register  AllocationListPtr  ListPtr;
 
 
 
-/*!
- *  Destroys a matrix and frees all memory associated with it.
+/*
+ *  MATRIX DEALLOCATION
  *
- *  \param eMatrix
- *      Pointer to the matrix frame which is to be destroyed.
- */
-/*  >>> Local variables:
+ *  Deallocates pointers and elements of Matrix.
+ *
+ *  >>> Arguments:
+ *  Matrix  <input>  (char *)
+ *      Pointer to the matrix frame which is to be removed from memory.
+ *
+ *  >>> Local variables:
  *  ListPtr  (AllocationListPtr)
  *      Pointer into the linked list of pointers to allocated data structures.
  *      Points to pointer to structure to be freed.
@@ -625,7 +644,9 @@ register  AllocationListPtr  ListPtr;
  */
 
 void
-spDestroy( spMatrix eMatrix )
+spDestroy( eMatrix )
+
+register spMatrix eMatrix;
 {
 MatrixPtr Matrix = (MatrixPtr)eMatrix;
 register  AllocationListPtr  ListPtr, NextListPtr;
@@ -665,18 +686,23 @@ register  AllocationListPtr  ListPtr, NextListPtr;
 
 
 
-/*!
- *  This function returns the error status of the given matrix.
+/*
+ *  RETURN MATRIX ERROR STATUS
  *
- *  \return
+ *  This function is used to determine the error status of the given matrix.
+ *
+ *  >>> Returned:
  *      The error status of the given matrix.
  *
- *  \param eMatrix
- *      The pointer to the matrix for which the error status is desired.
+ *  >>> Arguments:
+ *  eMatrix  <input>  (char *)
+ *      The matrix for which the error status is desired.
  */
 
 spError
-spErrorState( spMatrix eMatrix )
+spErrorState( eMatrix )
+
+spMatrix eMatrix;
 {
 /* Begin `spErrorState'. */
 
@@ -696,27 +722,26 @@ spErrorState( spMatrix eMatrix )
 
 
 
-/*!
- *  This function returns the row and column number where the matrix was
- *  detected as singular (if pivoting was allowed on the last factorization)
- *  or where a zero was detected on the diagonal (if pivoting was not
- *  allowed on the last factorization). Pivoting is performed only in
- *  spOrderAndFactor().
+/*
+ *  WHERE IS MATRIX SINGULAR
  *
- *  \param eMatrix
+ *  This function returns the row and column number where the matrix was
+ *  detected as singular or where a zero was detected on the diagonal.
+ *
+ *  >>> Arguments:
+ *  eMatrix  <input>  (char *)
  *      The matrix for which the error status is desired.
- *  \param pRow
+ *  pRow  <output>  (int *)
  *      The row number.
- *  \param pCol
+ *  pCol  <output>  (int *)
  *      The column number.
  */
 
 void
-spWhereSingular(
-    spMatrix eMatrix,
-    int *pRow,
-    int *pCol
-)
+spWhereSingular( eMatrix, pRow, pCol )
+
+spMatrix eMatrix;
+int *pRow, *pCol;
 {
 MatrixPtr Matrix = (MatrixPtr)eMatrix;
 
@@ -736,24 +761,27 @@ MatrixPtr Matrix = (MatrixPtr)eMatrix;
 
 
 
-/*!
+/*
+ *  MATRIX SIZE
+ *
  *  Returns the size of the matrix.  Either the internal or external size of
  *  the matrix is returned.
  *
- *  \param eMatrix
+ *  >>> Arguments:
+ *  eMatrix  <input>  (char *)
  *      Pointer to matrix.
- *  \param External
- *      If \a External is set true, the external size , i.e., the value of the
+ *  External  <input>  (BOOLEAN)
+ *      If External is set true, the external size , i.e., the value of the
  *      largest external row or column number encountered is returned.
  *      Otherwise the true size of the matrix is returned.  These two sizes
- *      may differ if the \a TRANSLATE option is set true.
+ *      may differ if the TRANSLATE option is set true.
  */
 
 int
-spGetSize(
-    spMatrix eMatrix,
-    int External
-)
+spGetSize( eMatrix, External )
+
+spMatrix eMatrix;
+BOOLEAN  External;
 {
 MatrixPtr Matrix = (MatrixPtr)eMatrix;
 
@@ -777,15 +805,20 @@ MatrixPtr Matrix = (MatrixPtr)eMatrix;
 
 
 
-/*!
- *  Forces matrix to be real.
+/*
+ *  SET MATRIX COMPLEX OR REAL
  *
- *  \param eMatrix
+ *  Forces matrix to be either real or complex.
+ *
+ *  >>> Arguments:
+ *  eMatrix  <input>  (char *)
  *      Pointer to matrix.
  */
 
 void
-spSetReal( spMatrix eMatrix )
+spSetReal( eMatrix )
+
+spMatrix eMatrix;
 {
 /* Begin `spSetReal'. */
 
@@ -796,15 +829,10 @@ spSetReal( spMatrix eMatrix )
 }
 
 
-/*!
- *  Forces matrix to be complex.
- *
- *  \param eMatrix
- *      Pointer to matrix.
- */
-
 void
-spSetComplex( spMatrix eMatrix )
+spSetComplex( eMatrix )
+
+spMatrix eMatrix;
 {
 /* Begin `spSetComplex'. */
 
@@ -822,15 +850,21 @@ spSetComplex( spMatrix eMatrix )
 
 
 
-/*!
- *  This function returns the number of fill-ins that currently exists in a matrix.
+/*
+ *  ELEMENT OR FILL-IN COUNT
  *
- *  \param eMatrix
+ *  Two functions used to return simple statistics.  Either the number
+ *  of total elements, or the number of fill-ins can be returned.
+ *
+ *  >>> Arguments:
+ *  eMatrix  <input>  (char *)
  *      Pointer to matrix.
  */
 
 int
-spFillinCount( spMatrix eMatrix )
+spFillinCount( eMatrix )
+
+spMatrix eMatrix;
 {
 /* Begin `spFillinCount'. */
 
@@ -839,15 +873,10 @@ spFillinCount( spMatrix eMatrix )
 }
 
 
-/*!
- *  This function returns the total number of elements (including fill-ins) that currently exists in a matrix.
- *
- *  \param eMatrix
- *      Pointer to matrix.
- */
-
 int
-spElementCount( spMatrix eMatrix )
+spElementCount( eMatrix )
+
+spMatrix eMatrix;
 {
 /* Begin `spElementCount'. */
 

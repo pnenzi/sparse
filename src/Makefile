@@ -1,17 +1,12 @@
-#  Makefile for Sparse1.4
+#  Makefile for Sparse1.3
 #
 #  Ken Kundert
-#  kundert@users.sourceforge.net
+#  UC Berkeley
 #
-#
-#  To run tests ...
-#  On Linux machines run: make
-#  On Unix machines run: gnumake
-
 CFLAGS = -O
 LINTFLAGS = -lc -lm
 SHELL = /bin/sh
-CC = gcc
+CC = cc
 
 HFILES = spConfig.h spDefs.h spMatrix.h
 CFILES = spAllocate.c spBuild.c spFactor.c spOutput.c spSolve.c spUtils.c \
@@ -36,9 +31,6 @@ spice		: $(LIBRARY) spSMP.o
 	cp $(LIBRARY) ../lib/SMP.a
 	ar r ../lib/SMP.a spSMP.o
 	ranlib ../lib/SMP.a
-
-dox		:
-	doxygen Doxyfile
 
 lint		:
 	@lint $(LINTFLAGS) $(CFILES) $(TESTC) | grep -v "but never used"

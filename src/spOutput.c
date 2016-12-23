@@ -4,19 +4,11 @@
  *  Author:                     Advisor:
  *      Kenneth S. Kundert          Alberto Sangiovanni-Vincentelli
  *      UC Berkeley
- */
-/*! \file
- * 
+ *
  *  This file contains the output-to-file and output-to-screen routines for
  *  the matrix package.
  *
- *  Objects that begin with the \a spc prefix are considered private
- *  and should not be used.
- *
- *  \author
- *  Kenneth S. Kundert <kundert@users.sourceforge.net>
- */
-/*  >>> User accessible functions contained in this file:
+ *  >>> User accessible functions contained in this file:
  *  spPrint
  *  spFileMatrix
  *  spFileVector
@@ -29,15 +21,24 @@
 /*
  *  Revision and copyright information.
  *
- *  Copyright (c) 1985-2003
- *  by Kenneth S. Kundert
+ *  Copyright (c) 1985-1993
+ *  by Kenneth S. Kundert and the University of California.
+ *
+ *  Permission to use, copy, modify, and distribute this software and
+ *  its documentation for any purpose and without fee is hereby granted,
+ *  provided that the copyright notices appear in all copies and
+ *  supporting documentation and that the authors and the University of
+ *  California are properly credited.  The authors and the University of
+ *  California make no representations as to the suitability of this
+ *  software for any purpose.  It is provided `as is', without express
+ *  or implied warranty.
  */
 
 #ifndef lint
 static char copyright[] =
-    "Sparse1.4: Copyright (c) 1985-2003 by Kenneth S. Kundert";
+    "Sparse1.3: Copyright (c) 1985-1993 by Kenneth S. Kundert";
 static char RCSid[] =
-    "$Header: /cvsroot/sparse/src/spOutput.c,v 1.3 2003/06/29 04:19:52 kundert Exp $";
+    "$Header: /cvsroot/sparse/src/spOutput.c,v 1.1.1.1 2003/06/05 07:06:48 kundert Exp $";
 #endif
 
 
@@ -67,31 +68,34 @@ static char RCSid[] =
 
 #if DOCUMENTATION
 
-/*!
+/*
+ *  PRINT MATRIX
+ *
  *  Formats and send the matrix to standard output.  Some elementary
  *  statistics are also output.  The matrix is output in a format that is
  *  readable by people.
  *
- *  \param eMatrix
+ *  >>> Arguments:
+ *  Matrix  <input>  (char *)
  *      Pointer to matrix.
- *  \param PrintReordered
+ *  PrintReordered  <input>  (int)
  *      Indicates whether the matrix should be printed out in its original
  *      form, as input by the user, or whether it should be printed in its
  *      reordered form, as used by the matrix routines.  A zero indicates that
  *      the matrix should be printed as inputed, a one indicates that it
  *      should be printed reordered.
- *  \param Data
+ *  Data  <input>  (int)
  *      Boolean flag that when false indicates that output should be
  *      compressed such that only the existence of an element should be
  *      indicated rather than giving the actual value.  Thus 11 times as
  *      many can be printed on a row.  A zero signifies that the matrix
  *      should be printed compressed. A one indicates that the matrix
  *      should be printed in all its glory.
- *  \param Header
+ *  Header  <input>  (int)
  *      Flag indicating that extra information should be given, such as row
  *      and column numbers.
- */
-/*  >>> Local variables:
+ *
+ *  >>> Local variables:
  *  Col  (int)
  *      Column being printed.
  *  ElementCount  (int)
@@ -135,12 +139,10 @@ static char RCSid[] =
  */
 
 void
-spPrint(
-    spMatrix eMatrix,
-    int PrintReordered,
-    int Data,
-    int Header
-)
+spPrint( eMatrix, PrintReordered, Data, Header )
+
+spMatrix eMatrix;
+int PrintReordered, Data, Header;
 {
 MatrixPtr  Matrix = (MatrixPtr)eMatrix;
 register  int  J = 0;
@@ -363,33 +365,36 @@ int  *PrintOrdToIntRowMap, *PrintOrdToIntColMap;
 
 
 
-/*!
+/*
+ *  OUTPUT MATRIX TO FILE
+ *
  *  Writes matrix to file in format suitable to be read back in by the
  *  matrix test program.
  *
- *  \return
+ *  >>> Returns:
  *  One is returned if routine was successful, otherwise zero is returned.
- *  The calling function can query \a errno (the system global error variable)
+ *  The calling function can query errno (the system global error variable)
  *  as to the reason why this routine failed.
  *
- *  \param eMatrix
+ *  >>> Arguments:
+ *  Matrix  <input>  (char *)
  *      Pointer to matrix.
- *  \param File
+ *  File  <input>  (char *)
  *      Name of file into which matrix is to be written.
- *  \param Label
+ *  Label  <input>  (char *)
  *      String that is transferred to file and is used as a label.
- *  \param Reordered
+ *  Reordered  <input> (BOOLEAN)
  *      Specifies whether matrix should be output in reordered form,
  *      or in original order.
- *  \param Data
+ *  Data  <input> (BOOLEAN)
  *      Indicates that the element values should be output along with
  *      the indices for each element.  This parameter must be true if
  *      matrix is to be read by the sparse test program.
- *  \param Header
+ *  Header  <input> (BOOLEAN)
  *      Indicates that header is desired.  This parameter must be true if
  *      matrix is to be read by the sparse test program.
- */
-/*  >>> Local variables:
+ *
+ *  >>> Local variables:
  *  Col  (int)
  *      The original column number of the element being output.
  *  pElement  (ElementPtr)
@@ -403,20 +408,17 @@ int  *PrintOrdToIntRowMap, *PrintOrdToIntColMap;
  */
 
 int
-spFileMatrix(
-    spMatrix eMatrix,
-    char *File,
-    char *Label,
-    int Reordered,
-    int Data,
-    int Header
-)
+spFileMatrix( eMatrix, File, Label, Reordered, Data, Header )
+
+spMatrix eMatrix;
+char *Label, *File;
+int Reordered, Data, Header;
 {
 MatrixPtr  Matrix = (MatrixPtr)eMatrix;
 register  int  I, Size;
 register  ElementPtr  pElement;
 int  Row, Col, Err;
-FILE  *pMatrixFile;
+FILE  *pMatrixFile, *fopen();
 
 /* Begin `spFileMatrix'. */
     ASSERT_IS_SPARSE( Matrix );
@@ -525,50 +527,54 @@ FILE  *pMatrixFile;
 
 
 
-/*!
+/*
+ *  OUTPUT SOURCE VECTOR TO FILE
+ *
  *  Writes vector to file in format suitable to be read back in by the
  *  matrix test program.  This routine should be executed after the function
  *  spFileMatrix.
  *
- *  \return
+ *  >>> Returns:
  *  One is returned if routine was successful, otherwise zero is returned.
- *  The calling function can query \a errno (the system global error variable)
+ *  The calling function can query errno (the system global error variable)
  *  as to the reason why this routine failed.
  *
- *  \param eMatrix
+ *  >>> Arguments:
+ *  Matrix  <input>  (char *)
  *      Pointer to matrix.
- *  \param File
+ *  File  <input>  (char *)
  *      Name of file into which matrix is to be written.
- *  \param RHS
+ *  RHS  <input>  (RealNumber [])
  *      Right-hand side vector. This is only the real portion if
- *      \a spSEPARATED_COMPLEX_VECTORS is true.
- *  \param iRHS
+ *      spSEPARATED_COMPLEX_VECTORS is true.
+ *  iRHS  <input>  (RealNumber [])
  *      Right-hand side vector, imaginary portion.  Not necessary if matrix
- *      is real or if \a spSEPARATED_COMPLEX_VECTORS is set false.
- *      \a iRHS is a macro that replaces itself with `, iRHS' if the options
- *      \a spCOMPLEX and \a spSEPARATED_COMPLEX_VECTORS are set, otherwise
- *      it disappears without a trace.
- */
-/*  >>> Local variables:
+ *      is real or if spSEPARATED_COMPLEX_VECTORS is set false.
+ *
+ *  >>> Local variables:
  *  pMatrixFile  (FILE *)
  *      File pointer to the matrix file.
  *  Size  (int)
  *      The size of the matrix.
+ *
+ *  >>> Obscure Macros
+ *  IMAG_RHS
+ *      Replaces itself with `, iRHS' if the options spCOMPLEX and
+ *      spSEPARATED_COMPLEX_VECTORS are set, otherwise it disappears
+ *      without a trace.
  */
 
 int
-spFileVector(
-    spMatrix eMatrix,
-    char *File,
-    spREAL RHS[]
-#if spCOMPLEX AND spSEPARATED_COMPLEX_VECTORS
-    , spREAL iRHS[]
-#endif
-)
+spFileVector( eMatrix, File, RHS IMAG_RHS )
+
+spMatrix eMatrix;
+char *File;
+RealVector  RHS IMAG_RHS;
 {
 MatrixPtr  Matrix = (MatrixPtr)eMatrix;
 register  int  I, Size, Err;
 FILE  *pMatrixFile;
+FILE  *fopen();
 
 /* Begin `spFileVector'. */
     ASSERT_IS_SPARSE( Matrix );
@@ -647,23 +653,26 @@ FILE  *pMatrixFile;
 
 
 
-/*!
+/*
+ *  OUTPUT STATISTICS TO FILE
+ *
  *  Writes useful information concerning the matrix to a file.  Should be
  *  executed after the matrix is factored.
  * 
- *  \return
+ *  >>> Returns:
  *  One is returned if routine was successful, otherwise zero is returned.
- *  The calling function can query \a errno (the system global error variable)
+ *  The calling function can query errno (the system global error variable)
  *  as to the reason why this routine failed.
  *
- *  \param eMatrix
+ *  >>> Arguments:
+ *  Matrix  <input>  (char *)
  *      Pointer to matrix.
- *  \param File
+ *  File  <input>  (char *)
  *      Name of file into which matrix is to be written.
- *  \param Label
+ *  Label  <input>  (char *)
  *      String that is transferred to file and is used as a label.
- */
-/*  >>> Local variables:
+ *
+ *  >>> Local variables:
  *  Data  (RealNumber)
  *      The value of the matrix element being output.
  *  LargestElement  (RealNumber)
@@ -681,18 +690,17 @@ FILE  *pMatrixFile;
  */
 
 int
-spFileStats(
-    spMatrix eMatrix,
-    char *File,
-    char *Label
-)
+spFileStats( eMatrix, File, Label )
+
+spMatrix eMatrix;
+char *File, *Label;
 {
 MatrixPtr  Matrix = (MatrixPtr)eMatrix;
 register  int  Size, I;
 register  ElementPtr  pElement;
 int NumberOfElements;
 RealNumber  Data, LargestElement, SmallestElement;
-FILE  *pStatsFile;
+FILE  *pStatsFile, *fopen();
 
 /* Begin `spFileStats'. */
     ASSERT_IS_SPARSE( Matrix );

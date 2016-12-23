@@ -1,0 +1,79 @@
+.sv 1.5i
+.ll 6.5i
+.ps 12
+.vs 14
+.B
+.EQ
+delim @@
+.EN
+.ce 2
+Sparse1.3
+.sp .1i
+A Sparse Linear Equation Solver 
+.R
+.sp
+.ps 10
+.vs 12
+.LP
+.na
+.nh
+.PP
+\fISparse1.3\fP is a flexible package of subroutines written in C used
+to solve large sparse systems of linear equations quickly and
+accurately.  The package can handle arbitrary real and complex square
+matrix equations.  Besides solving linear systems, can also quickly
+solve transposed systems, find determinants, and estimate errors due to
+ill-conditioning in the system of equations and instability in the
+computations.  \fISparse\fR also provides a test program that read
+matrix equations from a file, solve them, and print useful information
+about the equation and its solution.
+.PP
+\fISparse1.3\fR has replaced \fISparse1.2\fR providing greater
+capability and speed, and more refined interface to the calling program.
+\fISparse\fR is generally as fast as or faster than other popular sparse
+matrix packages when solving many matrices of similar structure.
+\fISparse\fR does not require or assume symmetry, and it is able to
+perform numerical pivoting to avoid unnecessary error in the solution.
+It handles its own memory allocation, sparing the user the hassle of
+providing adequate memory.  It also has a natural, flexible, and
+efficient interface to the calling program.
+.PP
+\fISparse\fR was originally written for use in circuit simulators and is
+particularly apt at handling node- and modified-node admittance
+matrices.  The systems of linear equations generated in a circuit
+simulator stem from solving large systems of nonlinear equations using
+Newton's method and integrating large stiff systems of ordinary
+differential equations.  However, \fISparse\fR is also suitable for
+other uses, including solving the very large systems of linear equations
+resulting from the numerical solution of partial differential equations.
+.PP
+The \fISparse1.3\fR package was written in the C programming language by
+Kenneth Kundert, and versions exist for the \s-1UNIX\s+1 and
+\s-1VAX/VMS\s+1 operating systems.  Be sure to specify the version when
+ordering.  The package includes source for the \fISparse\fP subroutine
+library, the test program, and two sets of interface routines.
+The first set provides a \fISparse1.2\fR interface, to make
+\fISparse1.3\fR backward-compatible, and the second allows \fISparse1.3\fR
+to be called from FORTRAN programs.  Also included in the package is a
+user's guide and a large collection of test matrices.
+.sp .5
+.LP
+\fBMaterials/handling fee:\fR $150.00.
+.sp .5
+.LP
+\fBThe following documents are included with the tape:\fR
+.IP 1.
+User's Guide.
+.sp .5
+.LP
+\fBVersions available:\fR Please specify \s-1UNIX\s+1 or \s-1VMS\s+1.
+.LP
+\fBTo obtain \fISparse1.3\fP for the Prime computer, contact:\fR
+.sp .3
+.in 10
+.nf
+Software Distribution
+Massachusetts Microelectronics Center
+75 North Drive
+Westborough, MA 01581
+(617) 870-0312

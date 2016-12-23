@@ -4,18 +4,11 @@
  *  Author:                     Advising professor:
  *     Kenneth S. Kundert           Alberto Sangiovanni-Vincentelli
  *     UC Berkeley
- */
-/*!\file
+ *
  *  This file contains the routines associated with clearing, loading and
- *  preprocessing the matrix.
+ *  preprocessing the matrix for the sparse matrix routines.
  *
- *  Objects that begin with the \a spc prefix are considered private
- *  and should not be used.
- *
- *  \author
- *  Kenneth S. Kundert <kundert@users.sourceforge.net>
- */
-/*  >>> User accessible functions contained in this file:
+ *  >>> User accessible functions contained in this file:
  *  spClear
  *  spFindElement
  *  spGetElement
@@ -39,14 +32,24 @@
 /*
  *  Revision and copyright information.
  *
- *  Copyright (c) 1985-2003 by Kenneth S. Kundert
+ *  Copyright (c) 1985-1993
+ *  by Kenneth S. Kundert and the University of California.
+ *
+ *  Permission to use, copy, modify, and distribute this software and
+ *  its documentation for any purpose and without fee is hereby granted,
+ *  provided that the copyright notices appear in all copies and
+ *  supporting documentation and that the authors and the University of
+ *  California are properly credited.  The authors and the University of
+ *  California make no representations as to the suitability of this
+ *  software for any purpose.  It is provided `as is', without express
+ *  or implied warranty.
  */
 
 #ifndef lint
 static char copyright[] =
-    "Sparse1.4: Copyright (c) 1985-2003 by Kenneth S. Kundert";
+    "Sparse1.3: Copyright (c) 1985-1993 by Kenneth S. Kundert";
 static char RCSid[] =
-    "@(#)$Header: /cvsroot/sparse/src/spBuild.c,v 1.3 2003/06/29 04:19:52 kundert Exp $";
+    "@(#)$Header: /cvsroot/sparse/src/spBuild.c,v 1.1.1.1 2003/06/05 07:06:50 kundert Exp $";
 #endif
 
 
@@ -78,28 +81,33 @@ static char RCSid[] =
  *  Function declarations
  */
 
-static void Translate( MatrixPtr, int*, int* );
-static void EnlargeMatrix( MatrixPtr, int );
-static void ExpandTranslationArrays( MatrixPtr, int );
+static void Translate spcARGS(( MatrixPtr, int*, int* ));
+static void EnlargeMatrix spcARGS(( MatrixPtr, int ));
+static void ExpandTranslationArrays spcARGS(( MatrixPtr, int ));
 
 
 
 
 
 
-/*!
+/*
+ *  CLEAR MATRIX
+ *
  *  Sets every element of the matrix to zero and clears the error flag.
  *
- *  \param eMatrix
+ *  >>> Arguments:
+ *  Matrix  <input>  (char *)
  *     Pointer to matrix that is to be cleared.
- */
-/*  >>> Local variables:
+ *
+ *  >>> Local variables:
  *  pElement  (ElementPtr)
  *     A pointer to the element being cleared.
  */
 
 void
-spClear( spMatrix eMatrix )
+spClear( eMatrix )
+
+spMatrix eMatrix;
 {
 MatrixPtr  Matrix = (MatrixPtr)eMatrix;
 register  ElementPtr  pElement;
@@ -154,33 +162,33 @@ register  int  I;
 
 
 
-/*!
+/*
+ *  FIND ELEMENT
+ *
  *  This routine is used to find an element given its indices.  It will not
  *  create it if it does not exist.
  *
- *  \return
- *  A pointer to the desired element, or \a NULL if it does not exist.
+ *  >>> Returned:
+ *  A pointer to the desired element, or NULL if it does not exist.
  *
- *  \param eMatrix
+ *  >>> Arguments:
+ *  eMatrix  <input>  (char *)
  *	Pointer to matrix.
- *  \param Row
+ *  Row  <input>  (int)
  *      Row index for element.
- *  \param Col
+ *  Col  <input>  (int)
  *      Column index for element.
  *
- *  \see spGetElement()
- */
-/*  >>> Local variables:
+ *  >>> Local variables:
  *  pElement  (ElementPtr)
  *      Pointer to an element in the matrix.
  */
 
 spElement *
-spFindElement(
-    spMatrix eMatrix,
-    int Row,
-    int Col
-)
+spFindElement( eMatrix, Row, Col )
+
+spMatrix eMatrix;
+register int Row, Col;
 {
 MatrixPtr  Matrix = (MatrixPtr)eMatrix;
 register ElementPtr  pElement;
@@ -248,32 +256,33 @@ int StartAt, Min = LARGEST_LONG_INTEGER;
 
 
 
-/*!
+/*
+ *  SINGLE ELEMENT ADDITION TO MATRIX BY INDEX
+ *
  *  Finds element [Row,Col] and returns a pointer to it.  If element is
  *  not found then it is created and spliced into matrix.  This routine
  *  is only to be used after spCreate() and before spMNA_Preorder(),
  *  spFactor() or spOrderAndFactor().  Returns a pointer to the
- *  real portion of an \a spElement.  This pointer is later used by
- *  \a spADD_xxx_ELEMENT to directly access element.
+ *  Real portion of a MatrixElement.  This pointer is later used by
+ *  spADD_xxx_ELEMENT to directly access element.
  *
- *  \return
+ *  >>> Returns:
  *  Returns a pointer to the element.  This pointer is then used to directly
  *  access the element during successive builds.
  *
- *  \param eMatrix
+ *  >>> Arguments:
+ *  Matrix  <input>  (char *)
  *     Pointer to the matrix that the element is to be added to.
- *  \param Row
+ *  Row  <input>  (int)
  *     Row index for element.  Must be in the range of [0..Size] unless
- *     the options \a EXPANDABLE or \a TRANSLATE are used. Elements placed in
- *     row zero are discarded.  In no case may \a Row be less than zero.
- *  \param Col
+ *     the options EXPANDABLE or TRANSLATE are used. Elements placed in
+ *     row zero are discarded.  In no case may Row be less than zero.
+ *  Col  <input>  (int)
  *     Column index for element.  Must be in the range of [0..Size] unless
- *     the options \a EXPANDABLE or \a TRANSLATE are used. Elements placed in
- *     column zero are discarded.  In no case may \a Col be less than zero.
-
- *  \see spFindElement()
- */
-/*  >>> Local variables:
+ *     the options EXPANDABLE or TRANSLATE are used. Elements placed in
+ *     column zero are discarded.  In no case may Col be less than zero.
+ *
+ *  >>> Local variables:
  *  pElement  (RealNumber *)
  *     Pointer to the element.
  *
@@ -283,11 +292,10 @@ int StartAt, Min = LARGEST_LONG_INTEGER;
  */
 
 spElement *
-spGetElement(
-    spMatrix eMatrix,
-    int Row,
-    int Col
-)
+spGetElement( eMatrix, Row, Col )
+
+spMatrix eMatrix;
+int  Row, Col;
 {
 MatrixPtr Matrix = (MatrixPtr)eMatrix;
 ElementPtr pElement;
@@ -380,11 +388,10 @@ ElementPtr pElement;
  */
 
 static void
-Translate( 
-    MatrixPtr Matrix,
-    int *Row,
-    int *Col
-)
+Translate( Matrix, Row, Col )
+
+MatrixPtr Matrix;
+int  *Row, *Col;
 {
 register int IntRow, IntCol, ExtRow, ExtCol;
 
@@ -458,41 +465,46 @@ register int IntRow, IntCol, ExtRow, ExtCol;
 
 
 #if QUAD_ELEMENT
-/*!
- *  Performs same function as spGetElement() except rather than one
- *  element, all four matrix elements for a floating two terminal
- *  admittance component are added. This routine also works if component
- *  is grounded.  Positive elements are placed at [Node1,Node2] and
- *  [Node2,Node1].  This routine is only to be used after spCreate()
- *  and before spMNA_Preorder(), spFactor() or spOrderAndFactor().
+/*
+ *  ADDITION OF ADMITTANCE TO MATRIX BY INDEX
  *
- *  \return
- *  Error code. Possible errors include \a spNO_MEMORY.
- *  Error is not cleared in this routine.
+ *  Performs same function as spGetElement except rather than one
+ *  element, all four Matrix elements for a floating component are
+ *  added.  This routine also works if component is grounded.  Positive
+ *  elements are placed at [Node1,Node2] and [Node2,Node1].  This
+ *  routine is only to be used after spCreate() and before
+ *  spMNA_Preorder(), spFactor() or spOrderAndFactor().
  *
- *  \param Matrix
+ *  >>> Returns:
+ *  Error code.
+ *
+ *  >>> Arguments:
+ *  Matrix  <input>  (char *)
  *     Pointer to the matrix that component is to be entered in.
- *  \param Node1
+ *  Node1  <input>  (int)
  *     Row and column indices for elements. Must be in the range of [0..Size]
- *     unless the options \a EXPANDABLE or \a TRANSLATE are used. Node zero is the
- *     ground node.  In no case may \a Node1 be less than zero.
- *  \param Node2
+ *     unless the options EXPANDABLE or TRANSLATE are used. Node zero is the
+ *     ground node.  In no case may Node1 be less than zero.
+ *  Node2  <input>  (int)
  *     Row and column indices for elements. Must be in the range of [0..Size]
- *     unless the options \a EXPANDABLE or \a TRANSLATE are used. Node zero is the
- *     ground node.  In no case may \a Node2 be less than zero.
- *  \param Template
+ *     unless the options EXPANDABLE or TRANSLATE are used. Node zero is the
+ *     ground node.  In no case may Node2 be less than zero.
+ *  Template  <output>  (struct spTemplate *)
  *     Collection of pointers to four elements that are later used to directly
  *     address elements.  User must supply the template, this routine will
  *     fill it.
+ *
+ *  Possible errors:
+ *  spNO_MEMORY
+ *  Error is not cleared in this routine.
  */
 
 spError
-spGetAdmittance(
-    spMatrix Matrix,
-    int Node1,
-    int Node2,
-    struct spTemplate *Template
-)
+spGetAdmittance( Matrix, Node1, Node2, Template )
+
+spMatrix Matrix;
+int  Node1, Node2;
+struct  spTemplate  *Template;
 {
 
 /* Begin `spGetAdmittance'. */
@@ -523,56 +535,64 @@ spGetAdmittance(
 
 
 #if QUAD_ELEMENT
-/*!
- *  Similar to spGetAdmittance(), except that spGetAdmittance() only
- *  handles 2-terminal components, whereas spGetQuad() handles simple
+/*
+ *  ADDITION OF FOUR ELEMENTS TO MATRIX BY INDEX
+ *
+ *  Similar to spGetAdmittance, except that spGetAdmittance only
+ *  handles 2-terminal components, whereas spGetQuad handles simple
  *  4-terminals as well.  These 4-terminals are simply generalized
  *  2-terminals with the option of having the sense terminals different
- *  from the source and sink terminals.  spGetQuad() adds four
- *  elements to the matrix.  Positive elements occur at [Row1,Col1]
- *  [Row2,Col2] while negative elements occur at [Row1,Col2] and [Row2,Col1].
+ *  from the source and sink terminals.  spGetQuad adds four
+ *  elements to the matrix.  Positive elements occur at Row1,Col1
+ *  Row2,Col2 while negative elements occur at Row1,Col2 and Row2,Col1.
  *  The routine works fine if any of the rows and columns are zero.
  *  This routine is only to be used after spCreate() and before
  *  spMNA_Preorder(), spFactor() or spOrderAndFactor()
- *  unless \a TRANSLATE is set true.
+ *  unless TRANSLATE is set true.
  *
- *  \return
- *  Error code. Possible errors include \a spNO_MEMORY.
- *  Error is not cleared in this routine.
+ *  >>> Returns:
+ *  Error code.
  *
- *  \param Matrix
+ *  >>> Arguments:
+ *  Matrix  <input>  (char *)
  *     Pointer to the matrix that component is to be entered in.
- *  \param Row1
+ *  Row1  <input>  (int)
  *     First row index for elements. Must be in the range of [0..Size]
- *     unless the options \a EXPANDABLE or \a TRANSLATE are used. Zero is the
+ *     unless the options EXPANDABLE or TRANSLATE are used. Zero is the
  *     ground row.  In no case may Row1 be less than zero.
- *  \param Row2
+ *  Row2  <input>  (int)
  *     Second row index for elements. Must be in the range of [0..Size]
- *     unless the options \a EXPANDABLE or \a TRANSLATE are used. Zero is the
+ *     unless the options EXPANDABLE or TRANSLATE are used. Zero is the
  *     ground row.  In no case may Row2 be less than zero.
- *  \param Col1
+ *  Col1  <input>  (int)
  *     First column index for elements. Must be in the range of [0..Size]
- *     unless the options \a EXPANDABLE or \a TRANSLATE are used. Zero is the
+ *     unless the options EXPANDABLE or TRANSLATE are used. Zero is the
  *     ground column.  In no case may Col1 be less than zero.
- *  \param Col2
+ *  Col2  <input>  (int)
  *     Second column index for elements. Must be in the range of [0..Size]
- *     unless the options \a EXPANDABLE or \a TRANSLATE are used. Zero is the
+ *     unless the options EXPANDABLE or TRANSLATE are used. Zero is the
  *     ground column.  In no case may Col2 be less than zero.
- *  \param Template
+ *  Template  <output>  (struct spTemplate *)
  *     Collection of pointers to four elements that are later used to directly
  *     address elements.  User must supply the template, this routine will
  *     fill it.
+ *  Real  <input>  (RealNumber)
+ *     Real data to be added to elements.
+ *  Imag  <input>  (RealNumber)
+ *     Imag data to be added to elements.  If matrix is real, this argument
+ *     may be deleted.
+ *
+ *  Possible errors:
+ *  spNO_MEMORY
+ *  Error is not cleared in this routine.
  */
 
 spError
-spGetQuad(
-    spMatrix Matrix,
-    int Row1,
-    int Row2,
-    int Col1,
-    int Col2,
-    struct  spTemplate  *Template
-)
+spGetQuad( Matrix, Row1, Row2, Col1, Col2, Template )
+
+spMatrix Matrix;
+int  Row1, Row2, Col1, Col2;
+struct  spTemplate  *Template;
 {
 /* Begin `spGetQuad'. */
     Template->Element1 = spGetElement( Matrix, Row1, Col1);
@@ -602,50 +622,52 @@ spGetQuad(
 
 
 #if QUAD_ELEMENT
-/*!
- *  Addition of four structural ones to matrix by index.
+/*
+ *  ADDITION OF FOUR STRUCTURAL ONES TO MATRIX BY INDEX
+ *
  *  Performs similar function to spGetQuad() except this routine is
  *  meant for components that do not have an admittance representation.
  *
- *  The following stamp is used: \code
+ *  The following stamp is used:
  *         Pos  Neg  Eqn
  *  Pos  [  .    .    1  ]
  *  Neg  [  .    .   -1  ]
  *  Eqn  [  1   -1    .  ]
- *  \endcode
  *
- *  \return
- *  Error code. Possible errors include \a spNO_MEMORY.
- *  Error is not cleared in this routine.
+ *  >>> Returns:
+ *  Error code.
  *
- *  \param Matrix
+ *  >>> Arguments:
+ *  Matrix  <input>  (char *)
  *     Pointer to the matrix that component is to be entered in.
- *  \param Pos
+ *  Pos  <input>  (int)
  *     See stamp above. Must be in the range of [0..Size]
- *     unless the options \a EXPANDABLE or \a TRANSLATE are used. Zero is the
- *     ground row.  In no case may \a Pos be less than zero.
- *  \param Neg
+ *     unless the options EXPANDABLE or TRANSLATE are used. Zero is the
+ *     ground row.  In no case may Pos be less than zero.
+ *  Neg  <input>  (int)
  *     See stamp above. Must be in the range of [0..Size]
- *     unless the options \a EXPANDABLE or \a TRANSLATE are used. Zero is the
- *     ground row.  In no case may \a Neg be less than zero.
- *  \param Eqn
+ *     unless the options EXPANDABLE or TRANSLATE are used. Zero is the
+ *     ground row.  In no case may Neg be less than zero.
+ *  Eqn  <input>  (int)
  *     See stamp above. Must be in the range of [0..Size]
- *     unless the options \a EXPANDABLE or \a TRANSLATE are used. Zero is the
- *     ground row.  In no case may \a Eqn be less than zero.
- *  \param Template
+ *     unless the options EXPANDABLE or TRANSLATE are used. Zero is the
+ *     ground row.  In no case may Eqn be less than zero.
+ *  Template  <output>  (struct spTemplate *)
  *     Collection of pointers to four elements that are later used to directly
  *     address elements.  User must supply the template, this routine will
  *     fill it.
+ *
+ *  Possible errors:
+ *  spNO_MEMORY
+ *  Error is not cleared in this routine.
  */
 
 spError
-spGetOnes(
-    spMatrix Matrix,
-    int Pos,
-    int Neg,
-    int Eqn,
-    struct spTemplate *Template
-)
+spGetOnes(Matrix, Pos, Neg, Eqn, Template)
+
+spMatrix Matrix;
+int  Pos, Neg, Eqn;
+struct  spTemplate  *Template;
 {
 /* Begin `spGetOnes'. */
     Template->Element4Negated = spGetElement( Matrix, Neg, Eqn );
@@ -691,10 +713,10 @@ spGetOnes(
  */
 
 ElementPtr
-spcFindDiag(
-    MatrixPtr Matrix,
-    register int Index
-)
+spcFindDiag( Matrix, Index )
+
+MatrixPtr Matrix;
+register int Index;
 {
 register ElementPtr  pElement;
 
@@ -757,14 +779,13 @@ register ElementPtr  pElement;
  */
 
 ElementPtr
-spcCreateElement(
-    MatrixPtr Matrix,
-    int Row,
-    register int Col,
-    register ElementPtr *ppToLeft,
-    register ElementPtr *ppAbove,
-    BOOLEAN Fillin
-)
+spcCreateElement( Matrix, Row, Col, ppToLeft, ppAbove, Fillin )
+
+MatrixPtr Matrix;
+int Row;
+register int Col;
+register ElementPtr *ppToLeft, *ppAbove;
+BOOLEAN Fillin;
 {
 register ElementPtr  pElement, pCreatedElement;
 
@@ -881,7 +902,9 @@ register ElementPtr  pElement, pCreatedElement;
  */
 
 void
-spcLinkRows( MatrixPtr Matrix )
+spcLinkRows( Matrix )
+
+MatrixPtr Matrix;
 {
 register  ElementPtr  pElement, *FirstInRowEntry;
 register  ArrayOfElementPtrs  FirstInRowArray;
@@ -933,10 +956,10 @@ register  int  Col;
  */
 
 static void
-EnlargeMatrix(
-    MatrixPtr Matrix,
-    register int NewSize
-)
+EnlargeMatrix( Matrix, NewSize )
+
+MatrixPtr Matrix;
+register int  NewSize;
 {
 register int I, OldAllocatedSize = Matrix->AllocatedSize;
 
@@ -947,7 +970,7 @@ register int I, OldAllocatedSize = Matrix->AllocatedSize;
         return;
 
 /* Expand the matrix frame. */
-    NewSize = MAX( NewSize, (int)(EXPANSION_FACTOR * OldAllocatedSize) );
+    NewSize = MAX( NewSize, EXPANSION_FACTOR * OldAllocatedSize );
     Matrix->AllocatedSize = NewSize;
 
     if (( REALLOC(Matrix->IntToExtColMap, int, NewSize+1)) == NULL)
@@ -1022,10 +1045,10 @@ register int I, OldAllocatedSize = Matrix->AllocatedSize;
  */
 
 static void
-ExpandTranslationArrays(
-    MatrixPtr Matrix,
-    register int NewSize
-)
+ExpandTranslationArrays( Matrix, NewSize )
+
+MatrixPtr Matrix;
+register int  NewSize;
 {
 register int I, OldAllocatedSize = Matrix->AllocatedExtSize;
 
@@ -1036,7 +1059,7 @@ register int I, OldAllocatedSize = Matrix->AllocatedExtSize;
         return;
 
 /* Expand the translation arrays ExtToIntRowMap and ExtToIntColMap. */
-    NewSize = MAX( NewSize, (int)(EXPANSION_FACTOR * OldAllocatedSize) );
+    NewSize = MAX( NewSize, EXPANSION_FACTOR * OldAllocatedSize );
     Matrix->AllocatedExtSize = NewSize;
 
     if (( REALLOC(Matrix->ExtToIntRowMap, int, NewSize+1)) == NULL)
@@ -1067,51 +1090,68 @@ register int I, OldAllocatedSize = Matrix->AllocatedExtSize;
 
 
 #if INITIALIZE
-/*!
- *   Initialize the matrix.
+/*
+ *   INITIALIZE MATRIX
  *
- *   With the \a INITIALIZE compiler option (see spConfig.h) set true,
+ *   With the INITIALIZE compiler option (see spConfig.h) set true,
  *   Sparse allows the user to keep initialization information with each
  *   structurally nonzero matrix element.  Each element has a pointer
  *   that is set and used by the user.  The user can set this pointer
- *   using spInstallInitInfo() and may be read using spGetInitInfo().  Both
+ *   using spInstallInitInfo and may be read using spGetInitInfo.  Both
  *   may be used only after the element exists.  The function
  *   spInitialize() is a user customizable way to initialize the matrix.
  *   Passed to this routine is a function pointer.  spInitialize() sweeps
- *   through every element in the matrix and checks the \a pInitInfo
- *   pointer (the user supplied pointer).  If the \a pInitInfo is \a NULL,
+ *   through every element in the matrix and checks the pInitInfo
+ *   pointer (the user supplied pointer).  If the pInitInfo is NULL,
  *   which is true unless the user changes it (almost always true for
  *   fill-ins), then the element is zeroed.  Otherwise, the function
- *   pointer is called and passed the \a pInitInfo pointer as well as the
+ *   pointer is called and passed the pInitInfo pointer as well as the
  *   element pointer and the external row and column numbers.  If the
  *   user sets the value of each element, then spInitialize() replaces
  *   spClear().
  *
  *   The user function is expected to return a nonzero integer if there
  *   is a fatal error and zero otherwise.  Upon encountering a nonzero
- *   return code, spInitialize() terminates, sets the error state of
- *   the matrix to be \a spMANGLED, and returns the error code.
+ *   return code, spInitialize() terminates and returns the error code.
  *
- *   \return
- *	Returns the return value of the \a pInit() function.
- *   \param eMatrix
- *      Pointer to matrix.
- *   \param pInit
- *      Pointer to a function that initializes an element.
-
- *   \see spClear()
+ *   >>> Arguments:
+ *   Matrix  <input>  (char *)
+ *       Pointer to matrix.
+ *
+ *   >>> Possible Errors:
+ *   Returns nonzero if error, zero otherwise.
  */
 
+void
+spInstallInitInfo( pElement, pInitInfo )
+
+spElement *pElement;
+spGenericPtr pInitInfo;
+{
+/* Begin `spInstallInitInfo'. */
+    vASSERT( pElement != NULL, "Invalid element pointer" );
+
+    ((ElementPtr)pElement)->pInitInfo = pInitInfo;
+}
+
+
+spGenericPtr
+spGetInitInfo( pElement )
+
+spElement *pElement;
+{
+/* Begin `spGetInitInfo'. */
+    vASSERT( pElement != NULL, "Invalid element pointer" );
+
+    return (spGenericPtr)((ElementPtr)pElement)->pInitInfo;
+}
+
+
 int
-spInitialize(
-    spMatrix eMatrix,
-    int (*pInit)(
-	spElement *pElement,
-	spGenericPtr pInitInfo,
-	int Row,
-	int Col
-    )
-)
+spInitialize( eMatrix, pInit )
+
+spMatrix eMatrix;
+int (*pInit)();
 {
 MatrixPtr Matrix = (MatrixPtr)eMatrix;
 register ElementPtr pElement;
@@ -1169,58 +1209,5 @@ int J, Error, Col;
     Matrix->SingularRow = 0;
     Matrix->PreviousMatrixWasComplex = Matrix->Complex;
     return 0;
-}
-
-
-
-
-/*!
- *   This function installs a pointer to a data structure that is used
- *   to contain initialization information to a matrix element. It is
- *   is then used by spInitialize() to initialize the matrix.
- *
- *   \param pElement
- *       Pointer to matrix element.
- *   \param pInitInfo
- *       Pointer to the data structure that will contain initialiation
- *       information.
- *   \see spInitialize()
- */
-
-void
-spInstallInitInfo(
-    spElement *pElement,
-    spGenericPtr pInitInfo
-)
-{
-/* Begin `spInstallInitInfo'. */
-    vASSERT( pElement != NULL, "Invalid element pointer" );
-
-    ((ElementPtr)pElement)->pInitInfo = pInitInfo;
-}
-
-
-/*!
- *   This function returns a pointer to a data structure that is used
- *   to contain initialization information to a matrix element. 
- *
- *   \return
- *       The pointer to the initialiation information data structure
- *       that is associated with a particular matrix element.
- *
- *   \param pElement
- *       Pointer to the matrix element.
- *
- *   \see spInitialize()
- */
-spGenericPtr
-spGetInitInfo(
-    spElement *pElement
-)
-{
-/* Begin `spGetInitInfo'. */
-    vASSERT( pElement != NULL, "Invalid element pointer" );
-
-    return (spGenericPtr)((ElementPtr)pElement)->pInitInfo;
 }
 #endif /* INITIALIZE */

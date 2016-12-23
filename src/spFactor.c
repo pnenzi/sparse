@@ -4,17 +4,10 @@
  *  Author:                     Advising Professor:
  *      Kenneth S. Kundert          Alberto Sangiovanni-Vincentelli
  *      UC Berkeley
- */
-/*! \file
+ *
  *  This file contains the routines to factor the matrix into LU form.
  *
- *  Objects that begin with the \a spc prefix are considered private
- *  and should not be used.
- *
- *  \author
- *  Kenneth S. Kundert <kundert@users.sourceforge.net>
- */
-/*  >>> User accessible functions contained in this file:
+ *  >>> User accessible functions contained in this file:
  *  spOrderAndFactor
  *  spFactor
  *  spPartition
@@ -37,15 +30,24 @@
 /*
  *  Revision and copyright information.
  *
- *  Copyright (c) 1985-2004
- *  by Kenneth S. Kundert
+ *  Copyright (c) 1985-1993
+ *  by Kenneth S. Kundert and the University of California.
+ *
+ *  Permission to use, copy, modify, and distribute this software and
+ *  its documentation for any purpose and without fee is hereby granted,
+ *  provided that the copyright notices appear in all copies and
+ *  supporting documentation and that the authors and the University of
+ *  California are properly credited.  The authors and the University of
+ *  California make no representations as to the suitability of this
+ *  software for any purpose.  It is provided `as is', without express
+ *  or implied warranty.
  */
 
 #ifndef lint
 static char copyright[] =
-    "Sparse1.4: Copyright (c) 1985-2003 by Kenneth S. Kundert";
+    "Sparse1.3: Copyright (c) 1985-1993 by Kenneth S. Kundert";
 static char RCSid[] =
-    "@(#)$Header: /cvsroot/sparse/src/spFactor.c,v 1.3 2003/06/29 04:19:52 kundert Exp $";
+    "@(#)$Header: /cvsroot/sparse/src/spFactor.c,v 1.1.1.1 2003/06/05 07:06:29 kundert Exp $";
 #endif
 
 
@@ -76,55 +78,57 @@ static char RCSid[] =
  * Function declarations
  */
 
-static int  FactorComplexMatrix( MatrixPtr );
-static void CreateInternalVectors( MatrixPtr );
-static void CountMarkowitz( MatrixPtr, RealVector, int );
-static void MarkowitzProducts( MatrixPtr, int );
-static ElementPtr SearchForPivot( MatrixPtr, int, int );
-static ElementPtr SearchForSingleton( MatrixPtr, int );
-static ElementPtr QuicklySearchDiagonal( MatrixPtr, int );
-static ElementPtr SearchDiagonal( MatrixPtr, int );
-static ElementPtr SearchEntireMatrix( MatrixPtr, int );
-static RealNumber FindLargestInCol( ElementPtr );
-static RealNumber FindBiggestInColExclude( MatrixPtr, ElementPtr, int );
-static void ExchangeRowsAndCols( MatrixPtr, ElementPtr, int );
-static void ExchangeColElements( MatrixPtr, int, ElementPtr, int,
-					  ElementPtr, int );
-static void ExchangeRowElements( MatrixPtr, int, ElementPtr, int,
-					  ElementPtr, int );
-static void RealRowColElimination( MatrixPtr, ElementPtr );
-static void ComplexRowColElimination( MatrixPtr, ElementPtr );
-static void UpdateMarkowitzNumbers( MatrixPtr, ElementPtr );
-static int  MatrixIsSingular( MatrixPtr, int );
-static int  ZeroPivot( MatrixPtr, int );
-static void WriteStatus( MatrixPtr, int );
+static int  FactorComplexMatrix spcARGS(( MatrixPtr ));
+static void CreateInternalVectors spcARGS(( MatrixPtr ));
+static void CountMarkowitz spcARGS(( MatrixPtr, RealVector, int ));
+static void MarkowitzProducts spcARGS(( MatrixPtr, int ));
+static ElementPtr SearchForPivot spcARGS(( MatrixPtr, int, int ));
+static ElementPtr SearchForSingleton spcARGS(( MatrixPtr, int ));
+static ElementPtr QuicklySearchDiagonal spcARGS(( MatrixPtr, int ));
+static ElementPtr SearchDiagonal spcARGS(( MatrixPtr, int ));
+static ElementPtr SearchEntireMatrix spcARGS(( MatrixPtr, int ));
+static RealNumber FindLargestInCol spcARGS(( ElementPtr ));
+static RealNumber FindBiggestInColExclude spcARGS(( MatrixPtr,
+						    ElementPtr, int ));
+static void ExchangeRowsAndCols spcARGS(( MatrixPtr, ElementPtr, int ));
+static void ExchangeColElements spcARGS(( MatrixPtr, int, ElementPtr, int,
+					  ElementPtr, int ));
+static void ExchangeRowElements spcARGS(( MatrixPtr, int, ElementPtr, int,
+					  ElementPtr, int ));
+static void RealRowColElimination spcARGS(( MatrixPtr, ElementPtr ));
+static void ComplexRowColElimination spcARGS(( MatrixPtr, ElementPtr ));
+static void UpdateMarkowitzNumbers spcARGS(( MatrixPtr, ElementPtr ));
+static int  MatrixIsSingular spcARGS(( MatrixPtr, int ));
+static int  ZeroPivot spcARGS(( MatrixPtr, int ));
+static void WriteStatus spcARGS(( MatrixPtr, int ));
 
 
 
 
 
-/*!
+/*
+ *  ORDER AND FACTOR MATRIX
+ *
  *  This routine chooses a pivot order for the matrix and factors it
- *  into \a LU form.  It handles both the initial factorization and subsequent
+ *  into LU form.  It handles both the initial factorization and subsequent
  *  factorizations when a reordering is desired.  This is handled in a manner
  *  that is transparent to the user.  The routine uses a variation of
- *  Gauss's method where the pivots are associated with \a L and the
- *  diagonal terms of \a U are one.
+ *  Gauss's method where the pivots are associated with L and the
+ *  diagonal terms of U are one.
  *
- *  \return
- *  The error code is returned.  Possible errors are \a spNO_MEMORY, 
- *  \a spSINGULAR and \a spSMALL_PIVOT.
- *  Error is cleared upon entering this function.
+ *  >>> Returned:
+ *  The error code is returned.  Possible errors are listed below.
  *
- *  \param eMatrix
- *      Pointer to the matrix.
- *  \param RHS
+ *  >>> Arguments:
+ *  Matrix  <input>  (char *)
+ *      Pointer to matrix.
+ *  RHS  <input>  (RealVector)
  *      Representative right-hand side vector that is used to determine
  *      pivoting order when the right hand side vector is sparse.  If
  *      RHS is a NULL pointer then the RHS vector is assumed to
  *      be full and it is not used when determining the pivoting
  *      order.
- *  \param RelThreshold
+ *  RelThreshold  <input>  (RealNumber)
  *      This number determines what the pivot relative threshold will
  *      be.  It should be between zero and one.  If it is one then the
  *      pivoting method becomes complete pivoting, which is very slow
@@ -134,7 +138,7 @@ static void WriteStatus( MatrixPtr, int );
  *      candidates that would cause excessive element growth if they
  *      were used.  Element growth is the cause of roundoff error.
  *      Element growth occurs even in well-conditioned matrices.
- *      Setting the \a RelThreshold large will reduce element growth and
+ *      Setting the RelThreshold large will reduce element growth and
  *      roundoff error, but setting it too large will cause execution
  *      time to be excessive and will result in a large number of
  *      fill-ins.  If this occurs, accuracy can actually be degraded
@@ -147,27 +151,27 @@ static void WriteStatus( MatrixPtr, int );
  *      performance on matrices where growth is low, as is often the
  *      case with ill-conditioned matrices.  Once a valid threshold is
  *      given, it becomes the new default.  The default value of
- *      \a RelThreshold was choosen for use with nearly diagonally
+ *      RelThreshold was choosen for use with nearly diagonally
  *      dominant matrices such as node- and modified-node admittance
  *      matrices.  For these matrices it is usually best to use
  *      diagonal pivoting.  For matrices without a strong diagonal, it
  *      is usually best to use a larger threshold, such as 0.01 or
  *      0.1.
- *  \param AbsThreshold
+ *  AbsThreshold  <input>  (RealNumber)
  *      The absolute magnitude an element must have to be considered
  *      as a pivot candidate, except as a last resort.  This number
  *      should be set significantly smaller than the smallest diagonal
  *      element that is is expected to be placed in the matrix.  If
  *      there is no reasonable prediction for the lower bound on these
- *      elements, then \a AbsThreshold should be set to zero.
- *      \a AbsThreshold is used to reduce the possibility of choosing as a
+ *      elements, then AbsThreshold should be set to zero.
+ *      AbsThreshold is used to reduce the possibility of choosing as a
  *      pivot an element that has suffered heavy cancellation and as a
  *      result mainly consists of roundoff error.  Once a valid
  *      threshold is given, it becomes the new default.
- *  \param DiagPivoting
+ *  DiagPivoting  <input>  (BOOLEAN)
  *      A flag indicating that pivot selection should be confined to the
- *      diagonal if possible.  If \a DiagPivoting is nonzero and if
- *      \a DIAGONAL_PIVOTING is enabled pivots will be chosen only from
+ *      diagonal if possible.  If DiagPivoting is nonzero and if
+ *      DIAGONAL_PIVOTING is enabled pivots will be chosen only from
  *      the diagonal unless there are no diagonal elements that satisfy
  *      the threshold criteria.  Otherwise, the entire reduced
  *      submatrix is searched when looking for a pivot.  The diagonal
@@ -183,22 +187,23 @@ static void WriteStatus( MatrixPtr, int );
  *      However, the initial pivot selection process takes considerably
  *      longer for off-diagonal pivoting.
  *
- *  \see spFactor()
- */
-/*  >>> Local variables:
+ *  >>> Local variables:
  *  pPivot  (ElementPtr)
  *      Pointer to the element being used as a pivot.
  *
+ *  >>> Possible errors:
+ *  spNO_MEMORY
+ *  spSINGULAR
+ *  spSMALL_PIVOT
+ *  Error is cleared in this function.
  */
 
 spError
-spOrderAndFactor(
-    spMatrix eMatrix,
-    spREAL RHS[],
-    spREAL RelThreshold,
-    spREAL AbsThreshold,
-    int DiagPivoting
-)
+spOrderAndFactor( eMatrix, RHS, RelThreshold, AbsThreshold, DiagPivoting )
+
+spMatrix eMatrix;
+RealNumber  RHS[], RelThreshold, AbsThreshold;
+BOOLEAN DiagPivoting;
 {
 MatrixPtr  Matrix = (MatrixPtr)eMatrix;
 ElementPtr  pPivot;
@@ -305,7 +310,9 @@ Done:
 
 
 
-/*!
+/*
+ *  FACTOR MATRIX
+ *
  *  This routine is the companion routine to spOrderAndFactor().
  *  Unlike spOrderAndFactor(), spFactor() cannot change the ordering.
  *  It is also faster than spOrderAndFactor().  The standard way of
@@ -315,22 +322,29 @@ Done:
  *  (say for example, that the matrix is diagonally dominant).  If
  *  spFactor() is called for the initial factorization of the matrix,
  *  then spOrderAndFactor() is automatically called with the default
- *  threshold.  This routine uses "row at a time" \a LU factorization.
+ *  threshold.  This routine uses "row at a time" LU factorization.
  *  Pivots are associated with the lower triangular matrix and the
  *  diagonals of the upper triangular matrix are ones.
  *
- *  \return
- *  The error code is returned.  Possible errors are
- *  \a spNO_MEMORY, \a spSINGULAR, \a spZERO_DIAG and \a spSMALL_PIVOT.
- *  Error is cleared upon entering this function.
+ *  >>> Returned:
+ *  The error code is returned.  Possible errors are listed below.
  *
- *  \param eMatrix
+ *  >>> Arguments:
+ *  Matrix  <input>  (char *)
  *      Pointer to matrix.
- *  \see spOrderAndFactor()
+ *
+ *  >>> Possible errors:
+ *  spNO_MEMORY
+ *  spSINGULAR
+ *  spZERO_DIAG
+ *  spSMALL_PIVOT
+ *  Error is cleared in this function.
  */
 
 spError
-spFactor( spMatrix eMatrix )
+spFactor( eMatrix )
+
+spMatrix eMatrix;
 {
 MatrixPtr  Matrix = (MatrixPtr)eMatrix;
 register  ElementPtr  pElement;
@@ -450,7 +464,9 @@ RealNumber Mult;
  */
 
 static int
-FactorComplexMatrix( MatrixPtr  Matrix )
+FactorComplexMatrix( Matrix )
+
+MatrixPtr  Matrix;
 {
 register  ElementPtr  pElement;
 register  ElementPtr  pColumn;
@@ -549,7 +565,9 @@ ComplexNumber Mult, Pivot;
 
 
 
-/*!
+/*
+ *  PARTITION MATRIX
+ *
  *  This routine determines the cost to factor each row using both
  *  direct and indirect addressing and decides, on a row-by-row basis,
  *  which addressing mode is fastest.  This information is used in
@@ -562,11 +580,11 @@ ComplexNumber Mult, Pivot;
  *  either using direct addressing or indirect addressing.  Direct
  *  addressing is fastest when the matrix is relatively dense and
  *  indirect addressing is best when the matrix is quite sparse.  The
- *  user selects the type of partition used with \a Mode.  If \a Mode is set
- *  to \a spDIRECT_PARTITION, then the all rows are placed in the direct
- *  addressing partition.  Similarly, if \a Mode is set to
- *  \a spINDIRECT_PARTITION, then the all rows are placed in the indirect
- *  addressing partition.  By setting \a Mode to \a spAUTO_PARTITION, the
+ *  user selects the type of partition used with Mode.  If Mode is set
+ *  to spDIRECT_PARTITION, then the all rows are placed in the direct
+ *  addressing partition.  Similarly, if Mode is set to
+ *  spINDIRECT_PARTITION, then the all rows are placed in the indirect
+ *  addressing partition.  By setting Mode to spAUTO_PARTITION, the
  *  user allows Sparse to select the partition for each row
  *  individually.  spFactor() generally runs faster if Sparse is
  *  allowed to choose its own partitioning, however choosing a
@@ -576,18 +594,19 @@ ComplexNumber Mult, Pivot;
  *  best to let Sparse choose the partition.  Otherwise, you should
  *  choose the partition based on the predicted density of the matrix.
  *
- *  \param eMatrix
+ *  >>> Arguments:
+ *  Matrix  <input>  (char *)
  *      Pointer to matrix.
- *  \param Mode
- *      Mode must be one of three special codes: \a spDIRECT_PARTITION,
- *      \a spINDIRECT_PARTITION, or \a spAUTO_PARTITION.
+ *  Mode  <input>  (int)
+ *      Mode must be one of three special codes: spDIRECT_PARTITION,
+ *      spINDIRECT_PARTITION, or spAUTO_PARTITION.
  */
 
 void
-spPartition(
-    spMatrix eMatrix,
-    int Mode
-)
+spPartition( eMatrix, Mode )
+
+spMatrix eMatrix;
+int Mode;
 {
 MatrixPtr  Matrix = (MatrixPtr)eMatrix;
 register  ElementPtr  pElement, pColumn;
@@ -731,7 +750,9 @@ BOOLEAN *DoRealDirect, *DoCmplxDirect;
  */
 
 void
-spcCreateInternalVectors( MatrixPtr Matrix )
+spcCreateInternalVectors( Matrix )
+
+MatrixPtr  Matrix;
 {
 int  Size;
 
@@ -818,11 +839,11 @@ int  Size;
  */
 
 static void
-CountMarkowitz(
-    MatrixPtr Matrix,
-    register RealVector  RHS,
-    int Step
-)
+CountMarkowitz( Matrix, RHS, Step )
+
+MatrixPtr Matrix;
+register RealVector  RHS;
+int Step;
 {
 register int  Count, I, Size = Matrix->Size;
 register ElementPtr  pElement;
@@ -928,10 +949,10 @@ int  ExtRow;
  */
 
 static void
-MarkowitzProducts( 
-    MatrixPtr Matrix,
-    int Step
-)
+MarkowitzProducts( Matrix, Step )
+
+MatrixPtr Matrix;
+int Step;
 {
 register  int  I, *pMarkowitzRow, *pMarkowitzCol;
 register  long  Product, *pMarkowitzProduct;
@@ -954,7 +975,7 @@ double fProduct;
             if (fProduct >= LARGEST_LONG_INTEGER)
                 *pMarkowitzProduct++ = LARGEST_LONG_INTEGER;
             else
-                *pMarkowitzProduct++ = (long)fProduct;
+                *pMarkowitzProduct++ = fProduct;
         }
         else
         {   Product = *pMarkowitzRow++ * *pMarkowitzCol++;
@@ -1015,11 +1036,10 @@ double fProduct;
  */
 
 static ElementPtr
-SearchForPivot(
-    MatrixPtr Matrix,
-    int Step,
-    BOOLEAN DiagPivoting
-)
+SearchForPivot( Matrix, Step, DiagPivoting )
+
+MatrixPtr Matrix;
+int Step, DiagPivoting;
 {
 register ElementPtr  ChosenPivot;
 ElementPtr  SearchForSingleton();
@@ -1117,10 +1137,10 @@ ElementPtr  SearchEntireMatrix();
  */
 
 static ElementPtr
-SearchForSingleton( 
-    MatrixPtr Matrix,
-    int Step
-)
+SearchForSingleton( Matrix, Step )
+
+MatrixPtr Matrix;
+int Step;
 {
 register  ElementPtr  ChosenPivot;
 register  int  I;
@@ -1339,10 +1359,10 @@ RealNumber  PivotMag, FindBiggestInColExclude();
  */
 
 static ElementPtr
-QuicklySearchDiagonal( 
-    MatrixPtr Matrix,
-    int Step
-)
+QuicklySearchDiagonal( Matrix, Step )
+
+MatrixPtr Matrix;
+int Step;
 {
 register long  MinMarkowitzProduct, *pMarkowitzProduct;
 register  ElementPtr  pDiag, pOtherInRow, pOtherInCol;
@@ -1538,10 +1558,10 @@ RealNumber  FindBiggestInColExclude();
  */
 
 static ElementPtr
-QuicklySearchDiagonal(
-    MatrixPtr Matrix,
-    int Step
-)
+QuicklySearchDiagonal( Matrix, Step )
+
+MatrixPtr Matrix;
+int Step;
 {
 register long  MinMarkowitzProduct, *pMarkowitzProduct;
 register  ElementPtr  pDiag;
@@ -1703,10 +1723,10 @@ RealNumber  FindBiggestInColExclude();
  */
 
 static ElementPtr
-SearchDiagonal( 
-    MatrixPtr Matrix,
-    register int Step
-)
+SearchDiagonal( Matrix, Step )
+
+MatrixPtr Matrix;
+register int Step;
 {
 register  int  J;
 register long  MinMarkowitzProduct, *pMarkowitzProduct;
@@ -1832,10 +1852,10 @@ RealNumber  FindBiggestInColExclude();
  */
 
 static ElementPtr
-SearchEntireMatrix(
-    MatrixPtr Matrix,
-    int Step
-)
+SearchEntireMatrix( Matrix, Step )
+
+MatrixPtr Matrix;
+int Step;
 {
 register  int  I, Size = Matrix->Size;
 register  ElementPtr  pElement;
@@ -1955,7 +1975,9 @@ RealNumber  FindLargestInCol();
  */
 
 static RealNumber
-FindLargestInCol( register ElementPtr pElement )
+FindLargestInCol( pElement )
+
+register  ElementPtr  pElement;
 {
 RealNumber  Magnitude, Largest = 0.0;
 
@@ -2019,11 +2041,11 @@ RealNumber  Magnitude, Largest = 0.0;
  */
 
 static RealNumber
-FindBiggestInColExclude(
-    MatrixPtr Matrix,
-    register ElementPtr pElement,
-    register int Step
-)
+FindBiggestInColExclude( Matrix, pElement, Step )
+
+MatrixPtr Matrix;
+register  ElementPtr  pElement;
+register  int Step;
 {
 register  int  Row;
 int  Col;
@@ -2096,11 +2118,11 @@ RealNumber  Largest, Magnitude;
  */
 
 static void
-ExchangeRowsAndCols( 
-    MatrixPtr Matrix,
-    ElementPtr pPivot,
-    register int Step
-)
+ExchangeRowsAndCols( Matrix, pPivot, Step )
+
+MatrixPtr Matrix;
+ElementPtr  pPivot;
+register int Step;
 {
 register  int   Row, Col;
 long  OldMarkowitzProd_Step, OldMarkowitzProd_Row, OldMarkowitzProd_Col;
@@ -2220,11 +2242,10 @@ long  OldMarkowitzProd_Step, OldMarkowitzProd_Row, OldMarkowitzProd_Col;
  */
 
 void
-spcRowExchange(
-    MatrixPtr Matrix,
-    int Row1,
-    int Row2
-)
+spcRowExchange( Matrix, Row1, Row2 )
+
+MatrixPtr Matrix;
+int  Row1, Row2;
 {
 register  ElementPtr  Row1Ptr, Row2Ptr;
 int  Column;
@@ -2323,11 +2344,10 @@ ElementPtr  Element1, Element2;
  */
 
 void
-spcColExchange(
-    MatrixPtr Matrix,
-    int Col1,
-    int Col2
-)
+spcColExchange( Matrix, Col1, Col2 )
+
+MatrixPtr Matrix;
+int  Col1, Col2;
 {
 register  ElementPtr  Col1Ptr, Col2Ptr;
 int  Row;
@@ -2431,14 +2451,11 @@ ElementPtr  Element1, Element2;
  */
 
 static void
-ExchangeColElements(
-    MatrixPtr Matrix,
-    int  Row1,
-    register ElementPtr Element1,
-    int  Row2,
-    register ElementPtr Element2,
-    int  Column
-)
+ExchangeColElements( Matrix, Row1, Element1, Row2, Element2, Column )
+
+MatrixPtr Matrix;
+register  ElementPtr  Element1, Element2;
+int  Row1, Row2, Column;
 {
 ElementPtr  *ElementAboveRow1, *ElementAboveRow2;
 ElementPtr  ElementBelowRow1, ElementBelowRow2;
@@ -2576,14 +2593,11 @@ register  ElementPtr  pElement;
  */
 
 static void
-ExchangeRowElements(
-    MatrixPtr Matrix,
-    int  Col1,
-    register ElementPtr Element1,
-    int  Col2,
-    register ElementPtr Element2,
-    int  Row
-)
+ExchangeRowElements( Matrix, Col1, Element1, Col2, Element2, Row )
+
+MatrixPtr Matrix;
+int  Col1, Col2, Row;
+register ElementPtr  Element1, Element2;
 {
 ElementPtr  *ElementLeftOfCol1, *ElementLeftOfCol2;
 ElementPtr  ElementRightOfCol1, ElementRightOfCol2;
@@ -2714,10 +2728,10 @@ register   ElementPtr  pElement;
  */
 
 static void
-RealRowColElimination(
-    MatrixPtr Matrix,
-    register ElementPtr pPivot
-)
+RealRowColElimination( Matrix, pPivot )
+
+MatrixPtr Matrix;
+register  ElementPtr  pPivot;
 {
 #if REAL
 register  ElementPtr  pSub, *ppAbove;
@@ -2806,10 +2820,10 @@ register  ElementPtr  pLower, pUpper;
  */
 
 static void
-ComplexRowColElimination(
-    MatrixPtr Matrix,
-    register ElementPtr pPivot
-)
+ComplexRowColElimination( Matrix, pPivot )
+
+MatrixPtr Matrix;
+register  ElementPtr  pPivot;
 {
 #if spCOMPLEX
 register  ElementPtr  pSub, *ppAbove;
@@ -2893,10 +2907,10 @@ register  ElementPtr  pLower, pUpper;
  */
 
 static void
-UpdateMarkowitzNumbers(
-    MatrixPtr Matrix,
-    ElementPtr pPivot
-)
+UpdateMarkowitzNumbers( Matrix, pPivot )
+
+MatrixPtr Matrix;
+ElementPtr  pPivot;
 {
 register  int  Row, Col;
 register  ElementPtr  ColPtr, RowPtr;
@@ -2917,7 +2931,7 @@ double Product;
             if (Product >= LARGEST_LONG_INTEGER)
                 Matrix->MarkowitzProd[Row] = LARGEST_LONG_INTEGER;
             else
-                Matrix->MarkowitzProd[Row] = (long)Product;
+                Matrix->MarkowitzProd[Row] = Product;
         }
         else Matrix->MarkowitzProd[Row] = MarkoRow[Row] * MarkoCol[Row];
         if (MarkoRow[Row] == 0)
@@ -2935,7 +2949,7 @@ double Product;
             if (Product >= LARGEST_LONG_INTEGER)
                 Matrix->MarkowitzProd[Col] = LARGEST_LONG_INTEGER;
             else
-                Matrix->MarkowitzProd[Col] = (long)Product;
+                Matrix->MarkowitzProd[Col] = Product;
         }
         else Matrix->MarkowitzProd[Col] = MarkoRow[Col] * MarkoCol[Col];
         if ((MarkoCol[Col] == 0) AND (MarkoRow[Col] != 0))
@@ -2966,10 +2980,10 @@ double Product;
  */
 
 static int
-MatrixIsSingular(
-    MatrixPtr Matrix,
-    int Step
-)
+MatrixIsSingular( Matrix, Step )
+
+MatrixPtr  Matrix;
+int  Step;
 {
 /* Begin `MatrixIsSingular'. */
 
@@ -2980,10 +2994,10 @@ MatrixIsSingular(
 
 
 static int
-ZeroPivot(
-    MatrixPtr Matrix,
-    int Step
-)
+ZeroPivot( Matrix, Step )
+
+MatrixPtr  Matrix;
+int  Step;
 {
 /* Begin `ZeroPivot'. */
 
@@ -3007,10 +3021,10 @@ ZeroPivot(
  */
 
 static void
-WriteStatus(
-    MatrixPtr Matrix,
-    int Step
-)
+WriteStatus( Matrix, Step )
+
+MatrixPtr Matrix;
+int Step;
 {
 int  I;
 

@@ -4,14 +4,12 @@
  *  Author:			Advising professor:
  *     Kenneth S. Kundert	    Alberto Sangiovanni-Vincentelli
  *     UC Berkeley
- */
-/*! \file
-*
- *  This module contains routines that interface Sparse1.4 to a calling
- *  program written in fortran.  Almost every externally available Sparse1.4
+ *
+ *  This module contains routines that interface Sparse1.3 to a calling
+ *  program written in fortran.  Almost every externally available Sparse1.3
  *  routine has a counterpart defined in this file, with the name the
- *  same except the \a sp prefix is changed to \a sf.  The \a spADD_ELEMENT
- *  and \a spADD_QUAD macros are also replaced with the \a sfAdd1 and \a sfAdd4
+ *  same except the `sp' prefix is changed to `sf'.  The spADD_ELEMENT
+ *  and spADD_QUAD macros are also replaced with the sfAdd1 and sfAdd4
  *  functions defined in this file.
  *
  *  To ease porting this file to different operating systems, the names of
@@ -25,8 +23,9 @@
  *  experience with FORTRAN.  The routines have had minimal testing.
  *  Any interface between two languages is going to have portability
  *  problems, this one is no exception.
- */
-/*  >>> User accessible functions contained in this file:
+ *  
+ *
+ *  >>> User accessible functions contained in this file:
  *  sfCreate()
  *  sfDestroy()
  *  sfStripFills()
@@ -91,14 +90,23 @@
 /*
  *  Revision and copyright information.
  *
- *  Copyright (c) 1985-2003 by Kenneth S. Kundert
+ *  Copyright (c) 1985-1993
+ *  by Kenneth S. Kundert and the University of California.
+ *
+ *  Permission to use, copy, modify, and distribute this software and its
+ *  documentation for any purpose and without fee is hereby granted, provided
+ *  that the above copyright notice appear in all copies and supporting
+ *  documentation and that the authors and the University of California
+ *  are properly credited.  The authors and the University of California
+ *  make no representations as to the suitability of this software for
+ *  any purpose.  It is provided `as is', without express or implied warranty.
  */
 
 #ifndef lint
 static char copyright[] =
-    "Sparse1.4: Copyright (c) 1985-2003 by Kenneth S. Kundert";
+    "Sparse1.3: Copyright (c) 1985-1993 by Kenneth S. Kundert";
 static char RCSid[] =
-    "@(#)$Header: /cvsroot/sparse/src/spFortran.c,v 1.3 2003/06/30 19:40:51 kundert Exp $";
+    "@(#)$Header: /cvsroot/sparse/src/spFortran.c,v 1.1.1.1 2003/06/05 07:06:36 kundert Exp $";
 #endif
 
 
@@ -175,11 +183,8 @@ static char RCSid[] =
 #define sfRoundoff		sfroundoff
 
 
-#define MATRIX_FILE_NAME	"spMatrix"
-#define STATS_FILE_NAME		"spStats"
 
 /*
- *
  *  Example of a FORTRAN Program Calling Sparse
  *
 
@@ -228,29 +233,37 @@ c
 
 
 
-/*  MATRIX ALLOCATION */
-/*!
+/*
+ *  MATRIX ALLOCATION
+ *
  *  Allocates and initializes the data structures associated with a matrix.
  *
- *  \return [INTEGER]
+ *  >>> Returned: [INTEGER]
  *  A pointer to the matrix is returned cast into an integer.  This pointer
  *  is then passed and used by the other matrix routines to refer to a
  *  particular matrix.  If an error occurs, the NULL pointer is returned.
  *
- *  \param Size [INTEGER]
- *	Size of matrix or estimate of size of matrix if matrix is \a EXPANDABLE.
- *  \param Complex  [INTEGER or INTEGER*2]
- *	Type of matrix.  If \a Complex is 0 then the matrix is real, otherwise
+ *  >>> Arguments:
+ *  Size  <input>  (long *) [INTEGER]
+ *	Size of matrix or estimate of size of matrix if matrix is EXPANDABLE.
+ *  Complex  <input>  (int *) [INTEGER or INTEGER*2]
+ *	Type of matrix.  If Complex is 0 then the matrix is real, otherwise
  *	the matrix will be complex.
  *	Note that if a matrix will be both real and complex, it must
  *	be specified here as being complex.
- *  \param Error  [INTEGER or INTEGER*2]
+ *  Error  <output>  (int *) [INTEGER or INTEGER*2]
  *	Returns error flag, needed because function spError() will not work
- *	correctly if spCreate() returns NULL. Possible errors include \a spNO_MEMORY.
+ *	correctly if spCreate() returns NULL.
+ *
+ *  >>> Possible errors:
+ *  spNO_MEMORY
+ *  Error is cleared in this routine.
  */
 
 long
-sfCreate( int *Size, int *Complex, int *Error )
+sfCreate( Size, Complex, Error )
+
+int  *Size, *Complex, *Error;
 {
 /* Begin `sfCreate'. */
     return (long)spCreate(*Size, *Complex, Error );
@@ -261,16 +274,20 @@ sfCreate( int *Size, int *Complex, int *Error )
 
 
 
-/*  MATRIX DEALLOCATION */
-/*!
- *  Deallocates pointers and elements of matrix.
+/*
+ *  MATRIX DEALLOCATION
  *
- *  \param Matrix [INTEGER]
+ *  Deallocates pointers and elements of Matrix.
+ *
+ *  >>> Arguments:
+ *  Matrix  <input>  (long *) [INTEGER]
  *	Pointer to the matrix frame which is to be removed from memory.
  */
 
 void
-sfDestroy( long *Matrix )
+sfDestroy( Matrix )
+
+long *Matrix;
 {
 /* Begin `sfDestroy'. */
     spDestroy((spMatrix)*Matrix);
@@ -284,16 +301,20 @@ sfDestroy( long *Matrix )
 
 #if STRIP
 
-/*  STRIP FILL-INS FROM MATRIX */
-/*!
+/*
+ *  STRIP FILL-INS FROM MATRIX
+ *
  *  Strips the matrix of all fill-ins.
  *
- *  \param Matrix [INTEGER]
+ *  >>> Arguments:
+ *  Matrix  <input>  (long *) [INTEGER]
  *	Pointer to the matrix to be stripped.
  */
 
 void
-sfStripFills( long *Matrix )
+sfStripFills( Matrix )
+
+long *Matrix;
 {
 /* Begin `sfStripFills'. */
     spStripFills((spMatrix)*Matrix);
@@ -307,16 +328,20 @@ sfStripFills( long *Matrix )
 
 
 
-/*  CLEAR MATRIX */
-/*!
+/*
+ *  CLEAR MATRIX
+ *
  *  Sets every element of the matrix to zero and clears the error flag.
  *
- *  \param Matrix [INTEGER]
+ *  >>> Arguments:
+ *  Matrix  <input>  (long *) [INTEGER]
  *     Pointer to matrix that is to be cleared.
  */
 
 void
-sfClear( long *Matrix )
+sfClear( Matrix )
+
+long *Matrix;
 {
 /* Begin `sfClear'. */
     spClear((spMatrix)*Matrix);
@@ -328,34 +353,42 @@ sfClear( long *Matrix )
 
 
 
-/*  SINGLE ELEMENT ADDITION TO MATRIX BY INDEX */
-/*!
+/*
+ *  SINGLE ELEMENT ADDITION TO MATRIX BY INDEX
+ *
  *  Finds element [Row,Col] and returns a pointer to it.  If element is
  *  not found then it is created and spliced into matrix.  This routine
  *  is only to be used after spCreate() and before spMNA_Preorder(),
  *  spFactor() or spOrderAndFactor().  Returns a pointer to the
- *  Real portion of a matrix element.  This pointer is later used by
+ *  Real portion of a MatrixElement.  This pointer is later used by
  *  sfAddxxxxx() to directly access element.
  *
- *  \return [INTEGER]
+ *  >>> Returns: [INTEGER]
  *  Returns a pointer to the element.  This pointer is then used to directly
- *  access the element during successive builds. Returns NULL if \a spNO_MEMORY
- *  error occurs. Error is not cleared in this routine.
+ *  access the element during successive builds.
  *
- *  \param Matrix [INTEGER]
+ *  >>> Arguments:
+ *  Matrix  <input>  (long *) [INTEGER]
  *     Pointer to the matrix that the element is to be added to.
- *  \param Row [INTEGER or INTEGER*2]
+ *  Row  <input>  (int *) [INTEGER or INTEGER*2]
  *     Row index for element.  Must be in the range of [0..Size] unless
- *     the options \a EXPANDABLE or \a TRANSLATE are used. Elements placed in
- *     row zero are discarded.  In no case may \a Row be less than zero.
- *  \param Col [INTEGER or INTEGER*2]
+ *     the options EXPANDABLE or TRANSLATE are used. Elements placed in
+ *     row zero are discarded.  In no case may Row be less than zero.
+ *  Col  <input>  (int *) [INTEGER or INTEGER*2]
  *     Column index for element.  Must be in the range of [0..Size] unless
- *     the options \a EXPANDABLE or \a TRANSLATE are used. Elements placed in
- *     column zero are discarded.  In no case may \a Col be less than zero.
+ *     the options EXPANDABLE or TRANSLATE are used. Elements placed in
+ *     column zero are discarded.  In no case may Col be less than zero.
+ *
+ *  >>> Possible errors:
+ *  spNO_MEMORY
+ *  Error is not cleared in this routine.
  */
 
 long
-sfGetElement( long *Matrix, int *Row, int *Col )
+sfGetElement( Matrix, Row, Col )
+
+long *Matrix;
+int  *Row, *Col;
 {
 /* Begin `sfGetElement'. */
     return (long)spGetElement((spMatrix)*Matrix, *Row, *Col);
@@ -368,37 +401,45 @@ sfGetElement( long *Matrix, int *Row, int *Col )
 
 
 #if QUAD_ELEMENT
-/*  ADDITION OF ADMITTANCE TO MATRIX BY INDEX */
-/*!
- *  Performs same function as sfGetElement() except rather than one
+/*
+ *  ADDITION OF ADMITTANCE TO MATRIX BY INDEX
+ *
+ *  Performs same function as sfGetElement except rather than one
  *  element, all four Matrix elements for a floating component are
  *  added.  This routine also works if component is grounded.  Positive
  *  elements are placed at [Node1,Node2] and [Node2,Node1].  This
  *  routine is only to be used after sfCreate() and before
  *  sfMNA_Preorder(), sfFactor() or sfOrderAndFactor().
  *
- *  \return [INTEGER or INTEGER*2]
- *  The error code. Possible errors include \a spNO_MEMORY.
- *  Error is not cleared in this routine.
+ *  >>> Returns: [INTEGER or INTEGER*2]
+ *  Error code.
  *
- *  \param Matrix [INTEGER]
+ *  >>> Arguments:
+ *  Matrix  <input>  (long *) [INTEGER]
  *     Pointer to the matrix that component is to be entered in.
- *  \param Node1 [INTEGER or INTEGER*2]
+ *  Node1  <input>  (int *) [INTEGER or INTEGER*2]
  *     Row and column indices for elements. Must be in the range of [0..Size]
- *     unless the options \a EXPANDABLE or \a TRANSLATE are used. Node zero is the
- *     ground node.  In no case may \a Node1 be less than zero.
- *  \param Node2 [INTEGER or INTEGER*2]
+ *     unless the options EXPANDABLE or TRANSLATE are used. Node zero is the
+ *     ground node.  In no case may Node1 be less than zero.
+ *  Node2  <input>  (int *) [INTEGER or INTEGER*2]
  *     Row and column indices for elements. Must be in the range of [0..Size]
- *     unless the options \a EXPANDABLE or \a TRANSLATE are used. Node zero is the
- *     ground node.  In no case may \a Node2 be less than zero.
- *  \param Template [INTEGER (4)]
+ *     unless the options EXPANDABLE or TRANSLATE are used. Node zero is the
+ *     ground node.  In no case may Node2 be less than zero.
+ *  Template  <output>  (long[4]) [INTEGER (4)]
  *     Collection of pointers to four elements that are later used to directly
  *     address elements.  User must supply the template, this routine will
  *     fill it.
+ *
+ *  Possible errors:
+ *  spNO_MEMORY
+ *  Error is not cleared in this routine.
  */
 
 int
-sfGetAdmittance( long *Matrix, int *Node1, int *Node2, long Template[4] )
+sfGetAdmittance( Matrix, Node1, Node2, Template )
+
+long  *Matrix, Template[4];
+int  *Node1, *Node2;
 {
 /* Begin `spGetAdmittance'. */
     return
@@ -417,13 +458,14 @@ sfGetAdmittance( long *Matrix, int *Node1, int *Node2, long Template[4] )
 
 
 #if QUAD_ELEMENT
-/*  ADDITION OF FOUR ELEMENTS TO MATRIX BY INDEX */
-/*!
- *  Similar to sfGetAdmittance(), except that sfGetAdmittance() only
- *  handles 2-terminal components, whereas sfGetQuad() handles simple
+/*
+ *  ADDITION OF FOUR ELEMENTS TO MATRIX BY INDEX
+ *
+ *  Similar to sfGetAdmittance, except that sfGetAdmittance only
+ *  handles 2-terminal components, whereas sfGetQuad handles simple
  *  4-terminals as well.  These 4-terminals are simply generalized
  *  2-terminals with the option of having the sense terminals different
- *  from the source and sink terminals.  sfGetQuad() adds four
+ *  from the source and sink terminals.  sfGetQuad adds four
  *  elements to the matrix.  Positive elements occur at Row1,Col1
  *  Row2,Col2 while negative elements occur at Row1,Col2 and Row2,Col1.
  *  The routine works fine if any of the rows and columns are zero.
@@ -431,36 +473,43 @@ sfGetAdmittance( long *Matrix, int *Node1, int *Node2, long Template[4] )
  *  sfMNA_Preorder(), sfFactor() or sfOrderAndFactor()
  *  unless TRANSLATE is set true.
  *
- *  \return [INTEGER or INTEGER*2]
- *  Error code. Possible errors include \a spNO_MEMORY.
- *  Error is not cleared in this routine.
+ *  >>> Returns: [INTEGER or INTEGER*2]
+ *  Error code.
  *
- *  \param Matrix [INTEGER]
+ *  >>> Arguments:
+ *  Matrix  <input>  (long *) [INTEGER]
  *     Pointer to the matrix that component is to be entered in.
- *  \param Row1 [INTEGER or INTEGER*2]
+ *  Row1  <input>  (int *) [INTEGER or INTEGER*2]
  *     First row index for elements. Must be in the range of [0..Size]
- *     unless the options \a EXPANDABLE or \a TRANSLATE are used. Zero is the
- *     ground row.  In no case may \a Row1 be less than zero.
- *  \param Row2 [INTEGER or INTEGER*2]
+ *     unless the options EXPANDABLE or TRANSLATE are used. Zero is the
+ *     ground row.  In no case may Row1 be less than zero.
+ *  Row2  <input>  (int *) [INTEGER or INTEGER*2]
  *     Second row index for elements. Must be in the range of [0..Size]
- *     unless the options \a EXPANDABLE or \a TRANSLATE are used. Zero is the
- *     ground row.  In no case may \a Row2 be less than zero.
- *  \param Col1 [INTEGER or INTEGER*2]
+ *     unless the options EXPANDABLE or TRANSLATE are used. Zero is the
+ *     ground row.  In no case may Row2 be less than zero.
+ *  Col1  <input>  (int *) [INTEGER or INTEGER*2]
  *     First column index for elements. Must be in the range of [0..Size]
- *     unless the options \a EXPANDABLE or \a TRANSLATE are used. Zero is the
- *     ground column.  In no case may \a Col1 be less than zero.
- *  \param Col2 [INTEGER or INTEGER*2]
+ *     unless the options EXPANDABLE or TRANSLATE are used. Zero is the
+ *     ground column.  In no case may Col1 be less than zero.
+ *  Col2  <input>  (int *) [INTEGER or INTEGER*2]
  *     Second column index for elements. Must be in the range of [0..Size]
- *     unless the options \a EXPANDABLE or \a TRANSLATE are used. Zero is the
- *     ground column.  In no case may \a Col2 be less than zero.
- *  \param Template [INTEGER (4)]
+ *     unless the options EXPANDABLE or TRANSLATE are used. Zero is the
+ *     ground column.  In no case may Col2 be less than zero.
+ *  Template  <output>  (long[4]) [INTEGER (4)]
  *     Collection of pointers to four elements that are later used to directly
  *     address elements.  User must supply the template, this routine will
  *     fill it.
+ *
+ *  Possible errors:
+ *  spNO_MEMORY
+ *  Error is not cleared in this routine.
  */
 
 int
-sfGetQuad( long *Matrix, int *Row1, int *Row2, int *Col1, int *Col2, long Template[4] )
+sfGetQuad( Matrix, Row1, Row2, Col1, Col2, Template )
+
+long  *Matrix, Template[4];
+int  *Row1, *Row2, *Col1, *Col2;
 {
 /* Begin `spGetQuad'. */
     return
@@ -479,44 +528,51 @@ sfGetQuad( long *Matrix, int *Row1, int *Row2, int *Col1, int *Col2, long Templa
 
 
 #if QUAD_ELEMENT
-/*  ADDITION OF FOUR STRUCTURAL ONES TO MATRIX BY INDEX */
-/*!
+/*
+ *  ADDITION OF FOUR STRUCTURAL ONES TO MATRIX BY INDEX
+ *
  *  Performs similar function to sfGetQuad() except this routine is
  *  meant for components that do not have an admittance representation.
  *
- *  The following stamp is used: \code
+ *  The following stamp is used:
  *         Pos  Neg  Eqn
  *  Pos  [  .    .    1  ]
  *  Neg  [  .    .   -1  ]
  *  Eqn  [  1   -1    .  ]
- *  \endcode
  *
- *  \return [INTEGER or INTEGER*2]
- *  Error code. Possible errors include \a spNO_MEMORY.
- *  Error is not cleared in this routine.
+ *  >>> Returns: [INTEGER or INTEGER*2]
+ *  Error code.
  *
- *  \param Matrix [INTEGER]
+ *  >>> Arguments:
+ *  Matrix  <input>  (long *) [INTEGER]
  *     Pointer to the matrix that component is to be entered in.
- *  \param Pos [INTEGER or INTEGER*2]
+ *  Pos  <input>  (int *) [INTEGER or INTEGER*2]
  *     See stamp above. Must be in the range of [0..Size]
- *     unless the options \a EXPANDABLE or \a TRANSLATE are used. Zero is the
- *     ground row.  In no case may \a Pos be less than zero.
- *  \param Neg [INTEGER or INTEGER*2]
+ *     unless the options EXPANDABLE or TRANSLATE are used. Zero is the
+ *     ground row.  In no case may Pos be less than zero.
+ *  Neg  <input>  (int *) [INTEGER or INTEGER*2]
  *     See stamp above. Must be in the range of [0..Size]
- *     unless the options \a EXPANDABLE or \a TRANSLATE are used. Zero is the
- *     ground row.  In no case may \a Neg be less than zero.
- *  \param Eqn [INTEGER or INTEGER*2]
+ *     unless the options EXPANDABLE or TRANSLATE are used. Zero is the
+ *     ground row.  In no case may Neg be less than zero.
+ *  Eqn  <input>  (int *) [INTEGER or INTEGER*2]
  *     See stamp above. Must be in the range of [0..Size]
- *     unless the options \a EXPANDABLE or \a TRANSLATE are used. Zero is the
- *     ground row.  In no case may \a Eqn be less than zero.
- *  \param Template [4]) [INTEGER (4)]
+ *     unless the options EXPANDABLE or TRANSLATE are used. Zero is the
+ *     ground row.  In no case may Eqn be less than zero.
+ *  Template  <output>  (long[4]) [INTEGER (4)]
  *     Collection of pointers to four elements that are later used to directly
  *     address elements.  User must supply the template, this routine will
  *     fill it.
+ *
+ *  Possible errors:
+ *  spNO_MEMORY
+ *  Error is not cleared in this routine.
  */
 
 int
-sfGetOnes( long *Matrix, int *Pos, int *Neg, int *Eqn, long Template[4] )
+sfGetOnes(Matrix, Pos, Neg, Eqn, Template)
+
+long  *Matrix, Template[4];
+int  *Pos, *Neg, *Eqn;
 {
 /* Begin `sfGetOnes'. */
     return
@@ -532,20 +588,30 @@ sfGetOnes( long *Matrix, int *Pos, int *Neg, int *Eqn, long Template[4] )
 
 
 
-/*  ADD ELEMENT(S) DIRECTLY TO MATRIX */
-/*!
- *  Adds a real value to a matrix element.
- *  These elements are referenced by pointer, and so must already have
- *  been created by spGetElement().
+/*
+ *  ADD ELEMENT(S) DIRECTLY TO MATRIX
  *
- *  \param Element [INTEGER]
+ *  Adds a value to an element or a set of four element in a matrix.
+ *  These elements are referenced by pointer, and so must already have
+ *  been created by spGetElement(), spGetAdmittance(), spGetQuad(), or
+ *  spGetOnes().
+ *
+ *  >>> Arguments:
+ *  Element  <input>  (long *) [INTEGER]
  *	Pointer to the element that is to be added to.
- *  \param Real [REAL or DOUBLE PRECISION]
+ *  Template  <input>  (long[4]) [INTEGER (4)]
+ *	Pointer to the element that is to be added to.
+ *  Real  <input>  (spREAL *) [REAL or DOUBLE PRECISION]
  *	Real portion of the number to be added to the element.
+ *  Imag  <input>  (spREAL *) [REAL or DOUBLE PRECISION]
+ *	Imaginary portion of the number to be added to the element.
  */
 
 void
-sfAdd1Real( long *Element, spREAL *Real )
+sfAdd1Real( Element, Real )
+
+long *Element;
+RealNumber *Real;
 {
 /* Begin `sfAdd1Real'. */
     *((RealNumber *)*Element) += *Real;
@@ -553,39 +619,23 @@ sfAdd1Real( long *Element, spREAL *Real )
 
 
 #if spCOMPLEX
-/*!
- *  Adds an imaginary value to a matrix element.
- *  These elements are referenced by pointer, and so must already have
- *  been created by spGetElement().
- *
- *  \param Element [INTEGER]
- *	Pointer to the element that is to be added to.
- *  \param Imag [REAL or DOUBLE PRECISION]
- *	Imaginary portion of the number to be added to the element.
- */
 
 void
-sfAdd1Imag( long *Element, spREAL *Imag )
+sfAdd1Imag( Element, Imag )
+
+long *Element;
+RealNumber *Imag;
 {
 /* Begin `sfAdd1Imag'. */
     *(((RealNumber *)*Element)+1) += *Imag;
 }
 
 
-/*!
- *  Adds a complex value to a matrix element.
- *  These elements are referenced by pointer, and so must already have
- *  been created by spGetElement().
- *
- *  \param Element [INTEGER]
- *	Pointer to the element that is to be added to.
- *  \param Real [REAL or DOUBLE PRECISION]
- *	Real portion of the number to be added to the element.
- *  \param Imag [REAL or DOUBLE PRECISION]
- *	Imaginary portion of the number to be added to the element.
- */
 void
-sfAdd1Complex( long *Element, spREAL *Real, spREAL *Imag )
+sfAdd1Complex( Element, Real, Imag )
+
+long *Element;
+RealNumber *Real, *Imag;
 {
 /* Begin `sfAdd1Complex'. */
     *((RealNumber *)*Element) += *Real;
@@ -595,19 +645,12 @@ sfAdd1Complex( long *Element, spREAL *Real, spREAL *Imag )
 
 
 #if QUAD_ELEMENT
-/*!
- *  Adds a real value to a set of four elements in a matrix.
- *  These elements are referenced by pointer, and so must already have
- *  been created by spGetAdmittance(), spGetQuad(), or spGetOnes().
- *
- *  \param Template [4]) [INTEGER (4)]
- *	Pointer to the element that is to be added to.
- *  \param Real [REAL or DOUBLE PRECISION]
- *	Real portion of the number to be added to the element.
- */
 
 void
-sfAdd4Real( long Template[4], spREAL *Real )
+sfAdd4Real( Template, Real )
+
+long Template[4];
+RealNumber *Real;
 {
 /* Begin `sfAdd4Real'. */
     *((RealNumber *)Template[0]) += *Real;
@@ -618,19 +661,12 @@ sfAdd4Real( long Template[4], spREAL *Real )
 
 
 #if spCOMPLEX
-/*!
- *  Adds an imaginary value to a set of four elements in a matrix.
- *  These elements are referenced by pointer, and so must already have
- *  been created by spGetAdmittance(), spGetQuad(), or spGetOnes().
- *
- *  \param Template [4]) [INTEGER (4)]
- *	Pointer to the element that is to be added to.
- *  \param Imag [REAL or DOUBLE PRECISION]
- *	Imaginary portion of the number to be added to the element.
- */
 
 void
-sfAdd4Imag( long Template[4], spREAL *Imag )
+sfAdd4Imag( Template, Imag )
+
+long Template[4];
+RealNumber *Imag;
 {
 /* Begin `sfAdd4Imag'. */
     *(((RealNumber *)Template[0])+1) += *Imag;
@@ -640,21 +676,11 @@ sfAdd4Imag( long Template[4], spREAL *Imag )
 }
 
 
-/*!
- *  Adds a complex value to a set of four elements in a matrix.
- *  These elements are referenced by pointer, and so must already have
- *  been created by spGetAdmittance(), spGetQuad(), or spGetOnes().
- *
- *  \param Template [4]) [INTEGER (4)]
- *	Pointer to the element that is to be added to.
- *  \param Real [REAL or DOUBLE PRECISION]
- *	Real portion of the number to be added to the element.
- *  \param Imag [REAL or DOUBLE PRECISION]
- *	Imaginary portion of the number to be added to the element.
- */
-
 void
-sfAdd4Complex( long Template[4], spREAL *Real, spREAL *Imag )
+sfAdd4Complex( Template, Real, Imag )
+
+long Template[4];
+RealNumber *Real, *Imag;
 {
 /* Begin `sfAdd4Complex'. */
     *((RealNumber *)Template[0]) += *Real;
@@ -674,8 +700,9 @@ sfAdd4Complex( long Template[4], spREAL *Real, spREAL *Imag )
 
 
 
-/*  ORDER AND FACTOR MATRIX */
-/*!
+/*
+ *  ORDER AND FACTOR MATRIX
+ *
  *  This routine chooses a pivot order for the matrix and factors it
  *  into LU form.  It handles both the initial factorization and subsequent
  *  factorizations when a reordering is desired.  This is handled in a manner
@@ -683,20 +710,19 @@ sfAdd4Complex( long Template[4], spREAL *Real, spREAL *Imag )
  *  Gauss's method where the pivots are associated with L and the
  *  diagonal terms of U are one.
  *
- *  \return [INTEGER of INTEGER*2]
- *  The error code is returned.  Possible errors include \a spNO_MEMORY,
- *  \a spSINGULAR, and \a spSMALL_PIVOT.
- *  Error is cleared in this function.
+ *  >>> Returned: [INTEGER of INTEGER*2]
+ *  The error code is returned.  Possible errors are listed below.
  *
- *  \return Matrix [INTEGER]
+ *  >>> Arguments:
+ *  Matrix  <input>  (long *) [INTEGER]
  *	Pointer to matrix.
- *  \return RHS [REAL (1) or DOUBLE PRECISION (1)]
+ *  RHS  <input>  (RealVector) [REAL (1) or DOUBLE PRECISION (1)]
  *	Representative right-hand side vector that is used to determine
  *	pivoting order when the right hand side vector is sparse.  If
- *	\a RHS is a NULL pointer then the RHS vector is assumed to
+ *	RHS is a NULL pointer then the RHS vector is assumed to
  *	be full and it is not used when determining the pivoting
  *	order.
- *  \return RelThreshold [REAL or DOUBLE PRECISION]
+ *  RelThreshold  <input>  (RealNumber *) [REAL or DOUBLE PRECISION]
  *      This number determines what the pivot relative threshold will
  *      be.  It should be between zero and one.  If it is one then the
  *      pivoting method becomes complete pivoting, which is very slow
@@ -706,7 +732,7 @@ sfAdd4Complex( long Template[4], spREAL *Real, spREAL *Imag )
  *      candidates that would cause excessive element growth if they
  *      were used.  Element growth is the cause of roundoff error.
  *      Element growth occurs even in well-conditioned matrices.
- *      Setting the \a RelThreshold large will reduce element growth and
+ *      Setting the RelThreshold large will reduce element growth and
  *      roundoff error, but setting it too large will cause execution
  *      time to be excessive and will result in a large number of
  *      fill-ins.  If this occurs, accuracy can actually be degraded
@@ -725,21 +751,21 @@ sfAdd4Complex( long Template[4], spREAL *Real, spREAL *Imag )
  *      diagonal pivoting.  For matrices without a strong diagonal, it
  *      is usually best to use a larger threshold, such as 0.01 or
  *      0.1.
- *  \return AbsThreshold [REAL or DOUBLE PRECISION]
+ *  AbsThreshold  <input>  (RealNumber *) [REAL or DOUBLE PRECISION]
  *	The absolute magnitude an element must have to be considered
  *	as a pivot candidate, except as a last resort.  This number
  *	should be set significantly smaller than the smallest diagonal
  *	element that is is expected to be placed in the matrix.  If
  *	there is no reasonable prediction for the lower bound on these
- *	elements, then \a AbsThreshold should be set to zero.
- *	\a AbsThreshold is used to reduce the possibility of choosing as a
+ *	elements, then AbsThreshold should be set to zero.
+ *	AbsThreshold is used to reduce the possibility of choosing as a
  *	pivot an element that has suffered heavy cancellation and as a
  *	result mainly consists of roundoff error.  Once a valid
  *	threshold is given, it becomes the new default.
- *  \return DiagPivoting [LOGICAL]
+ *  DiagPivoting  <input>  (long *) [LOGICAL]
  *	A flag indicating that pivot selection should be confined to the
  *	diagonal if possible.  If DiagPivoting is nonzero and if
- *	\a DIAGONAL_PIVOTING is enabled pivots will be chosen only from
+ *	DIAGONAL_PIVOTING is enabled pivots will be chosen only from
  *	the diagonal unless there are no diagonal elements that satisfy
  *	the threshold criteria.  Otherwise, the entire reduced
  *	submatrix is searched when looking for a pivot.  The diagonal
@@ -754,16 +780,19 @@ sfAdd4Complex( long Template[4], spREAL *Real, spREAL *Imag )
  *	A better ordering results in faster subsequent factorizations.
  *	However, the initial pivot selection process takes considerably
  *	longer for off-diagonal pivoting.
+ *
+ *  >>> Possible errors:
+ *  spNO_MEMORY
+ *  spSINGULAR
+ *  spSMALL_PIVOT
+ *  Error is cleared in this function.
  */
 
 int
-sfOrderAndFactor(
-	long *Matrix,
-	spREAL RHS[],
-	spREAL *RelThreshold,
-	spREAL *AbsThreshold,
-	long *DiagPivoting
-)
+sfOrderAndFactor( Matrix, RHS, RelThreshold, AbsThreshold, DiagPivoting )
+
+long *Matrix, *DiagPivoting;
+RealNumber  RHS[], *RelThreshold, *AbsThreshold;
 {
 /* Begin `sfOrderAndFactor'. */
     return spOrderAndFactor( (spMatrix)*Matrix, RHS, *RelThreshold,
@@ -776,8 +805,9 @@ sfOrderAndFactor(
 
 
 
-/*  FACTOR MATRIX */
-/*!
+/*
+ *  FACTOR MATRIX
+ *
  *  This routine is the companion routine to spOrderAndFactor().
  *  Unlike sfOrderAndFactor(), sfFactor() cannot change the ordering.
  *  It is also faster than sfOrderAndFactor().  The standard way of
@@ -791,20 +821,25 @@ sfOrderAndFactor(
  *  Pivots are associated with the lower triangular matrix and the
  *  diagonals of the upper triangular matrix are ones.
  *
- *  \return [INTEGER or INTEGER*2]
- *  The error code is returned.  Possible errors include
- *  \a spNO_MEMORY
- *  \a spSINGULAR
- *  \a spZERO_DIAG
- *  \a spSMALL_PIVOT
- *  Error is cleared in this function.
+ *  >>> Returned: [INTEGER or INTEGER*2]
+ *  The error code is returned.  Possible errors are listed below.
  *
- *  \param Matrix [INTEGER]
+ *  >>> Arguments:
+ *  Matrix  <input>  (long *) [INTEGER]
  *	Pointer to matrix.
+ *
+ *  >>> Possible errors:
+ *  spNO_MEMORY
+ *  spSINGULAR
+ *  spZERO_DIAG
+ *  spSMALL_PIVOT
+ *  Error is cleared in this function.
  */
 
 int
-sfFactor( long *Matrix )
+sfFactor( Matrix )
+
+long *Matrix;
 {
 /* Begin `sfFactor'. */
     return spFactor((spMatrix)*Matrix);
@@ -815,8 +850,9 @@ sfFactor( long *Matrix )
 
 
 
-/*  PARTITION MATRIX */
-/*!
+/*
+ *  PARTITION MATRIX
+ *
  *  This routine determines the cost to factor each row using both
  *  direct and indirect addressing and decides, on a row-by-row basis,
  *  which addressing mode is fastest.  This information is used in
@@ -829,29 +865,33 @@ sfFactor( long *Matrix )
  *  either using direct addressing or indirect addressing.  Direct
  *  addressing is fastest when the matrix is relatively dense and
  *  indirect addressing is best when the matrix is quite sparse.  The
- *  user selects the type of partition used with \a Mode.  If \a Mode is set
- *  to \a spDIRECT_PARTITION, then the all rows are placed in the direct
- *  addressing partition.  Similarly, if \a Mode is set to
- *  \a spINDIRECT_PARTITION, then the all rows are placed in the indirect
- *  addressing partition.  By setting \a Mode to \a spAUTO_PARTITION, the
- *  user allows \a Sparse to select the partition for each row
+ *  user selects the type of partition used with Mode.  If Mode is set
+ *  to spDIRECT_PARTITION, then the all rows are placed in the direct
+ *  addressing partition.  Similarly, if Mode is set to
+ *  spINDIRECT_PARTITION, then the all rows are placed in the indirect
+ *  addressing partition.  By setting Mode to spAUTO_PARTITION, the
+ *  user allows Sparse to select the partition for each row
  *  individually.  sfFactor() generally runs faster if Sparse is
  *  allowed to choose its own partitioning, however choosing a
  *  partition is expensive.  The time required to choose a partition is
  *  of the same order of the cost to factor the matrix.  If you plan to
  *  factor a large number of matrices with the same structure, it is
- *  best to let \a Sparse choose the partition.  Otherwise, you should
+ *  best to let Sparse choose the partition.  Otherwise, you should
  *  choose the partition based on the predicted density of the matrix.
  *
- *  \param Matrix [INTEGER]
+ *  >>> Arguments:
+ *  Matrix  <input>  (long *) [INTEGER]
  *	Pointer to matrix.
- *  \param Mode [INTEGER or INTEGER*2]
- *	Mode must be one of three special codes: \a spDIRECT_PARTITION,
- *	\a spINDIRECT_PARTITION, or \a spAUTO_PARTITION.
+ *  Mode  <input>  (int *) [INTEGER or INTEGER*2]
+ *	Mode must be one of three special codes: spDIRECT_PARTITION,
+ *	spINDIRECT_PARTITION, or spAUTO_PARTITION.
  */
 
 void
-sfPartition( long *Matrix, int *Mode )
+sfPartition( Matrix, Mode )
+
+long *Matrix;
+int *Mode;
 {
 /* Begin `sfPartition'. */
     spPartition((spMatrix)*Matrix, *Mode);
@@ -863,8 +903,9 @@ sfPartition( long *Matrix, int *Mode )
 
 
 
-/*  SOLVE MATRIX EQUATION */
-/*!
+/*
+ *  SOLVE MATRIX EQUATION
+ *
  *  Performs forward elimination and back substitution to find the
  *  unknown vector from the RHS vector and factored matrix.  This
  *  routine assumes that the pivots are associated with the lower
@@ -873,38 +914,40 @@ sfPartition( long *Matrix, int *Mode )
  *  in different way than is traditionally used in order to exploit the
  *  sparsity of the right-hand side.  See the reference in spRevision.
  *
- *  \param Matrix [INTEGER]
+ *  >>> Arguments:
+ *  Matrix  <input>  (long *) [INTEGER]
  *      Pointer to matrix.
- *  \param RHS [REAL (1) or DOUBLE PRECISION (1)]
- *      \a RHS is the input data array, the right hand side. This data is
+ *  RHS  <input>  (RealVector) [REAL (1) or DOUBLE PRECISION (1)]
+ *      RHS is the input data array, the right hand side. This data is
  *      undisturbed and may be reused for other solves.
- *  \param Solution [REAL (1) or DOUBLE PRECISION (1)]
- *      \a Solution is the output data array. This routine is constructed such that
- *      \a RHS and \a Solution can be the same array.
- *  \param iRHS [REAL (1) or DOUBLE PRECISION (1)]
- *      \a iRHS is the imaginary portion of the input data array, the right
+ *  Solution  <output>  (RealVector) [REAL (1) or DOUBLE PRECISION (1)]
+ *      Solution is the output data array. This routine is constructed such that
+ *      RHS and Solution can be the same array.
+ *  iRHS  <input>  (RealVector) [REAL (1) or DOUBLE PRECISION (1)]
+ *      iRHS is the imaginary portion of the input data array, the right
  *      hand side. This data is undisturbed and may be reused for other solves.
  *      This argument is only necessary if matrix is complex and if
- *      \a spSEPARATED_COMPLEX_VECTOR is set true.
- *  \param iSolution [REAL (1) or DOUBLE PRECISION (1)]
- *      \a iSolution is the imaginary portion of the output data array. This
- *      routine is constructed such that \a iRHS and \a iSolution can be
+ *      spSEPARATED_COMPLEX_VECTOR is set true.
+ *  iSolution  <output>  (RealVector) [REAL (1) or DOUBLE PRECISION (1)]
+ *      iSolution is the imaginary portion of the output data array. This
+ *      routine is constructed such that iRHS and iSolution can be
  *      the same array.  This argument is only necessary if matrix is complex
- *      and if \a spSEPARATED_COMPLEX_VECTOR is set true.
+ *      and if spSEPARATED_COMPLEX_VECTOR is set true.
+ *
+ *  >>> Obscure Macros
+ *  IMAG_VECTORS
+ *	Replaces itself with `, iRHS, iSolution' if the options spCOMPLEX and
+ *	spSEPARATED_COMPLEX_VECTORS are set, otherwise it disappears
+ *	without a trace.
  */
 
 /*VARARGS3*/
 
 void
-sfSolve(
-    long *Matrix,
-    spREAL RHS[],
-    spREAL Solution[]
-#   if spCOMPLEX AND spSEPARATED_COMPLEX_VECTORS
-	, spREAL iRHS[]
-	, spREAL iSolution[]
-#   endif
-)
+sfSolve( Matrix, RHS, Solution IMAG_VECTORS )
+
+long *Matrix;
+RealVector  RHS, Solution IMAG_VECTORS;
 {
 /* Begin `sfSolve'. */
     spSolve( (spMatrix)*Matrix, RHS, Solution IMAG_VECTORS );
@@ -916,8 +959,9 @@ sfSolve(
 
 
 #if TRANSPOSE
-/*  SOLVE TRANSPOSED MATRIX EQUATION */
-/*!
+/*
+ *  SOLVE TRANSPOSED MATRIX EQUATION
+ *
  *  Performs forward elimination and back substitution to find the
  *  unknown vector from the RHS vector and transposed factored
  *  matrix. This routine is useful when performing sensitivity analysis
@@ -926,38 +970,40 @@ sfSolve(
  *  (L) matrix and that the diagonal of the untransposed upper
  *  triangular (U) matrix consists of ones.
  *
- *  \param Matrix [INTEGER]
+ *  >>> Arguments:
+ *  Matrix  <input>  (long *) [INTEGER]
  *      Pointer to matrix.
- *  \param RHS [REAL (1) or DOUBLE PRECISION (1)]
- *      \a RHS is the input data array, the right hand side. This data is
+ *  RHS  <input>  (RealVector) [REAL (1) or DOUBLE PRECISION (1)]
+ *      RHS is the input data array, the right hand side. This data is
  *      undisturbed and may be reused for other solves.
- *  \param Solution [REAL (1) or DOUBLE PRECISION (1)]
- *      \a Solution is the output data array. This routine is constructed such that
- *      \a RHS and \a Solution can be the same array.
- *  \param iRHS [REAL (1) or DOUBLE PRECISION (1)]
- *      \a iRHS is the imaginary portion of the input data array, the right
+ *  Solution  <output>  (RealVector) [REAL (1) or DOUBLE PRECISION (1)]
+ *      Solution is the output data array. This routine is constructed such that
+ *      RHS and Solution can be the same array.
+ *  iRHS  <input>  (RealVector) [REAL (1) or DOUBLE PRECISION (1)]
+ *      iRHS is the imaginary portion of the input data array, the right
  *      hand side. This data is undisturbed and may be reused for other solves.
- *      If \a spSEPARATED_COMPLEX_VECTOR is set false, or if matrix is real, there
+ *      If spSEPARATED_COMPLEX_VECTOR is set false, or if matrix is real, there
  *      is no need to supply this array.
- *  \param iSolution [REAL (1) or DOUBLE PRECISION (1)]
- *      \a iSolution is the imaginary portion of the output data array. This
- *      routine is constructed such that \a iRHS and \a iSolution can be
- *      the same array.  If \a spSEPARATED_COMPLEX_VECTOR is set false, or if
+ *  iSolution  <output>  (RealVector) [REAL (1) or DOUBLE PRECISION (1)]
+ *      iSolution is the imaginary portion of the output data array. This
+ *      routine is constructed such that iRHS and iSolution can be
+ *      the same array.  If spSEPARATED_COMPLEX_VECTOR is set false, or if
  *      matrix is real, there is no need to supply this array.
+ *
+ *  >>> Obscure Macros
+ *  IMAG_VECTORS
+ *	Replaces itself with `, iRHS, iSolution' if the options spCOMPLEX and
+ *	spSEPARATED_COMPLEX_VECTORS are set, otherwise it disappears
+ *	without a trace.
  */
 
 /*VARARGS3*/
 
 void
-sfSolveTransposed( 
-    long *Matrix,
-    spREAL RHS[],
-    spREAL Solution[]
-#   if spCOMPLEX AND spSEPARATED_COMPLEX_VECTORS
-	, spREAL iRHS[]
-	, spREAL iSolution[]
-#   endif
-)
+sfSolveTransposed( Matrix, RHS, Solution IMAG_VECTORS )
+
+long *Matrix;
+RealVector  RHS, Solution IMAG_VECTORS;
 {
 /* Begin `sfSolveTransposed'. */
     spSolveTransposed( (spMatrix)*Matrix, RHS, Solution IMAG_VECTORS );
@@ -969,34 +1015,38 @@ sfSolveTransposed(
 
 
 #if DOCUMENTATION
-/*  PRINT MATRIX */
-/*!
+/*
+ *  PRINT MATRIX
+ *
  *  Formats and send the matrix to standard output.  Some elementary
  *  statistics are also output.  The matrix is output in a format that is
  *  readable by people.
  *
- *  \param Matrix [INTEGER]
+ *  >>> Arguments:
+ *  Matrix  <input>  (long *) [INTEGER]
  *	Pointer to matrix.
- *  \param PrintReordered [LOGICAL]
+ *  PrintReordered  <input>  (long *) [LOGICAL]
  *	Indicates whether the matrix should be printed out in its original
  *	form, as input by the user, or whether it should be printed in its
  *	reordered form, as used by the matrix routines.  A zero indicates that
  *	the matrix should be printed as inputed, a one indicates that it
  *	should be printed reordered.
- *  \param Data [LOGICAL]
+ *  Data  <input>  (long *) [LOGICAL]
  *	Boolean flag that when false indicates that output should be
  *	compressed such that only the existence of an element should be
  *	indicated rather than giving the actual value. Thus 10 times as many
  *	can be printed on a row.  A zero signifies that the matrix should
  *	be printed compressed.  A one indicates that the matrix should be
  *	printed in all its glory.
- *  \param Header [LOGICAL]
+ *  Header  <input>  (long *) [LOGICAL]
  *	Flag indicating that extra information such as the row and column
  *	numbers should be printed.
  */
 
 void
-sfPrint( long *Matrix, long *PrintReordered, long *Data, long *Header )
+sfPrint( Matrix, Data, PrintReordered, Header )
+
+long *Matrix, *PrintReordered, *Data, *Header;
 {
 /* Begin `sfPrint'. */
     spPrint( (spMatrix)*Matrix, (int)*PrintReordered,
@@ -1010,34 +1060,40 @@ sfPrint( long *Matrix, long *PrintReordered, long *Data, long *Header )
 
 
 #if DOCUMENTATION
-/*  OUTPUT MATRIX TO FILE */
-/*!
- *  Writes matrix to file in format suitable to be read back in by the
- *  matrix test program.  Data is sent to a file with a fixed name 
- *  (MATRIX_FILE_NAME) because it is impossible to pass strings from
- *  FORTRAN to C in a manner that is portable.
+/*
+ *  OUTPUT MATRIX TO FILE
  *
- *  \return
+ *  Writes matrix to file in format suitable to be read back in by the
+ *  matrix test program.  Data is sent to a file with a fixed name because
+ *  it is impossible to pass strings from FORTRAN to C in a manner that is
+ *  portable.
+ *
+ *  >>> Returns:
  *  One is returned if routine was successful, otherwise zero is returned.
  *  The calling function can query errno (the system global error variable)
  *  as to the reason why this routine failed.
  *
- *  \param Matrix [INTEGER]
+ *  >>> Arguments: [LOGICAL]
+ *  Matrix  <input>  (long *) [INTEGER]
  *      Pointer to matrix.
- *  \param Reordered [LOGICAL]
+ *  Reordered  <input> (long *) [LOGICAL]
  *      Specifies whether matrix should be output in reordered form,
  *	or in original order.
- *  \param Data [LOGICAL]
+ *  Data  <input> (long *) [LOGICAL]
  *      Indicates that the element values should be output along with
  *      the indices for each element.  This parameter must be true if
  *      matrix is to be read by the sparse test program.
- *  \param Header [LOGICAL]
+ *  Header  <input> (long *) [LOGICAL]
  *      Indicates that header is desired.  This parameter must be true if
  *      matrix is to be read by the sparse test program.
  */
+#define MATRIX_FILE_NAME	"spMatrix"
+#define STATS_FILE_NAME		"spStats"
 
 long
-sfFileMatrix( long *Matrix, long *Reordered, long *Data, long *Header )
+sfFileMatrix( Matrix, Reordered, Data, Header )
+
+long *Matrix, *Reordered, *Data, *Header;
 {
 /* Begin `sfFileMatrix'. */
     return spFileMatrix( (spMatrix)*Matrix, MATRIX_FILE_NAME, "",
@@ -1051,35 +1107,34 @@ sfFileMatrix( long *Matrix, long *Reordered, long *Data, long *Header )
 
 
 #if DOCUMENTATION
-/*  OUTPUT SOURCE VECTOR TO FILE */
-/*!
+/*
+ *  OUTPUT SOURCE VECTOR TO FILE
+ *
  *  Writes vector to file in format suitable to be read back in by the
  *  matrix test program.  This routine should be executed after the function
  *  sfFileMatrix.
  *
- *  \return
+ *  >>> Returns:
  *  One is returned if routine was successful, otherwise zero is returned.
  *  The calling function can query errno (the system global error variable)
  *  as to the reason why this routine failed.
  *
- *  \param Matrix [INTEGER]
+ *  >>> Arguments:
+ *  Matrix  <input>  (long *)
  *      Pointer to matrix.
- *  \param RHS [REAL (1) or DOUBLE PRECISION (1)]
+ *  RHS  <input>  (RealNumber []) [REAL (1) or DOUBLE PRECISION (1)]
  *      Right-hand side vector. This is only the real portion if
- *      \a spSEPARATED_COMPLEX_VECTORS is true.
- *  \param iRHS [REAL (1) or DOUBLE PRECISION (1)]
+ *      spSEPARATED_COMPLEX_VECTORS is true.
+ *  iRHS  <input>  (RealNumber []) [REAL (1) or DOUBLE PRECISION (1)]
  *      Right-hand side vector, imaginary portion.  Not necessary if matrix
- *      is real or if \a spSEPARATED_COMPLEX_VECTORS is set false.
+ *      is real or if spSEPARATED_COMPLEX_VECTORS is set false.
  */
 
 int
-sfFileVector( 
-    long *Matrix,
-    spREAL RHS[]
-#   if spCOMPLEX AND spSEPARATED_COMPLEX_VECTORS
-	, spREAL iRHS[]
-#   endif
-)
+sfFileVector( Matrix, RHS IMAG_RHS )
+
+long *Matrix;
+RealVector  RHS IMAG_RHS;
 {
 /* Begin `sfFileVector'. */
     return spFileVector( (spMatrix)*Matrix, MATRIX_FILE_NAME, RHS IMAG_RHS );
@@ -1093,25 +1148,26 @@ sfFileVector(
 
 
 #if DOCUMENTATION
-/*  OUTPUT STATISTICS TO FILE */
-/*!
+/*
+ *  OUTPUT STATISTICS TO FILE
+ *
  *  Writes useful information concerning the matrix to a file.  Should be
  *  executed after the matrix is factored.
- *  Data is sent to a file with a fixed name (STATS_FILE_NAME) because
- *  it is impossible to pass strings from FORTRAN to C in a manner that is
- *  portable.
  * 
- *  \return [LOGICAL]
+ *  >>> Returns: [LOGICAL]
  *  One is returned if routine was successful, otherwise zero is returned.
  *  The calling function can query errno (the system global error variable)
  *  as to the reason why this routine failed.
  *
- *  \param Matrix [INTEGER]
+ *  >>> Arguments:
+ *  Matrix  <input>  (long *) [INTEGER]
  *      Pointer to matrix.
  */
 
 int
-sfFileStats( long *Matrix )
+sfFileStats( Matrix )
+
+long *Matrix;
 {
 /* Begin `sfFileStats'. */
     return spFileStats( (spMatrix)*Matrix, STATS_FILE_NAME, "" );
@@ -1122,8 +1178,9 @@ sfFileStats( long *Matrix )
 
 
 #if MODIFIED_NODAL
-/*  PREORDER MODIFIED NODE ADMITTANCE MATRIX TO REMOVE ZEROS FROM DIAGONAL */
-/*!
+/*
+ *  PREORDER MODIFIED NODE ADMITTANCE MATRIX TO REMOVE ZEROS FROM DIAGONAL
+ *
  *  This routine massages modified node admittance matrices to remove
  *  zeros from the diagonal.  It takes advantage of the fact that the
  *  row and column associated with a zero diagonal usually have
@@ -1137,50 +1194,44 @@ sfFileStats( long *Matrix )
  *
  *  This routine exploits the fact that the structural one are placed
  *  in the matrix in symmetric twins.  For example, the stamps for
- *  grounded and a floating voltage sources are \code
+ *  grounded and a floating voltage sources are
  *  grounded:              floating:
  *  [  x   x   1 ]         [  x   x   1 ]
  *  [  x   x     ]         [  x   x  -1 ]
  *  [  1         ]         [  1  -1     ]
- *  \endcode
  *  Notice for the grounded source, there is one set of twins, and for
  *  the grounded, there are two sets.  We remove the zero from the diagonal
  *  by swapping the rows associated with a set of twins.  For example:
- *  grounded:              floating 1:            floating 2: \code
+ *  grounded:              floating 1:            floating 2:
  *  [  1         ]         [  1  -1     ]         [  x   x   1 ]
  *  [  x   x     ]         [  x   x  -1 ]         [  1  -1     ]
  *  [  x   x   1 ]         [  x   x   1 ]         [  x   x  -1 ]
- *  \endcode
  *
  *  It is important to deal with any zero diagonals that only have one
  *  set of twins before dealing with those that have more than one because
  *  swapping row destroys the symmetry of any twins in the rows being
- *  swapped, which may limit future moves.  Consider \code
+ *  swapped, which may limit future moves.  Consider
  *  [  x   x   1     ]
  *  [  x   x  -1   1 ]
  *  [  1  -1         ]
  *  [      1         ]
- *  \endcode
  *  There is one set of twins for diagonal 4 and two for diagonal3.
- *  Dealing with diagonal for first requires swapping rows 2 and 4. \code
+ *  Dealing with diagonal for first requires swapping rows 2 and 4.
  *  [  x   x   1     ]
  *  [      1         ]
  *  [  1  -1         ]
  *  [  x   x  -1   1 ]
- *  \endcode
- *  We can now deal with diagonal 3 by swapping rows 1 and 3. \code
+ *  We can now deal with diagonal 3 by swapping rows 1 and 3.
  *  [  1  -1         ]
  *  [      1         ]
  *  [  x   x   1     ]
  *  [  x   x  -1   1 ]
- *  \endcode
  *  And we are done, there are no zeros left on the diagonal.  However, if
- *  we originally dealt with diagonal 3 first, we could swap rows 2 and 3 \code
+ *  we originally dealt with diagonal 3 first, we could swap rows 2 and 3
  *  [  x   x   1     ]
  *  [  1  -1         ]
  *  [  x   x  -1   1 ]
  *  [      1         ]
- *  \endcode
  *  Diagonal 4 no longer has a symmetric twin and we cannot continue.
  *
  *  So we always take care of lone twins first.  When none remain, we
@@ -1193,12 +1244,15 @@ sfFileStats( long *Matrix )
  *  The algorithm used in this function was developed by Ken Kundert and
  *  Tom Quarles.
  *
- *  \param Matrix [INTEGER]
+ *  >>> Arguments:
+ *  Matrix  <input>  (long *) [INTEGER]
  *      Pointer to the matrix to be preordered.
  */
 
 void
-sfMNA_Preorder( long *Matrix )
+sfMNA_Preorder( Matrix )
+
+long *Matrix;
 {
 /* Begin `sfMNA_Preorder'. */
     spMNA_Preorder( (spMatrix)*Matrix );
@@ -1211,8 +1265,9 @@ sfMNA_Preorder( long *Matrix )
 
 
 #if SCALING
-/*  SCALE MATRIX */
-/*!
+/*
+ *  SCALE MATRIX
+ *
  *  This function scales the matrix to enhance the possibility of
  *  finding a good pivoting order.  Note that scaling enhances accuracy
  *  of the solution only if it affects the pivoting order, so it makes
@@ -1244,18 +1299,22 @@ sfMNA_Preorder( long *Matrix )
  *  the RHS and Solution vectors descaled.  Lastly, this function
  *  should not be executed before the function spMNA_Preorder.
  *
- *  \param Matrix [INTEGER]
+ *  >>> Arguments:
+ *  Matrix  <input> (long *) [INTEGER]
  *      Pointer to the matrix to be scaled.
- *  \param SolutionScaleFactors [REAL(1) or DOUBLE PRECISION(1)]
+ *  SolutionScaleFactors  <input>  (RealVector) [REAL(1) or DOUBLE PRECISION(1)]
  *      The array of Solution scale factors.  These factors scale the columns.
  *      All scale factors are real valued.
- *  \param RHS_ScaleFactors [REAL(1) or DOUBLE PRECISION(1)]
+ *  RHS_ScaleFactors  <input>  (RealVector) [REAL(1) or DOUBLE PRECISION(1)]
  *      The array of RHS scale factors.  These factors scale the rows.
  *      All scale factors are real valued.
  */
 
 void
-sfScale( long *Matrix, spREAL RHS_ScaleFactors[], spREAL SolutionScaleFactors[] )
+sfScale( Matrix, RHS_ScaleFactors, SolutionScaleFactors )
+
+long *Matrix;
+RealVector  RHS_ScaleFactors, SolutionScaleFactors;
 {
 /* Begin `sfScale'. */
     spScale( (spMatrix)*Matrix, RHS_ScaleFactors, SolutionScaleFactors );
@@ -1268,39 +1327,42 @@ sfScale( long *Matrix, spREAL RHS_ScaleFactors[], spREAL SolutionScaleFactors[] 
 
 
 #if MULTIPLICATION
-/*  MATRIX MULTIPLICATION */
-/*!
+/*
+ *  MATRIX MULTIPLICATION
+ *
  *  Multiplies matrix by solution vector to find source vector.
  *  Assumes matrix has not been factored.  This routine can be used
  *  as a test to see if solutions are correct.  It should not be used
  *  before PreorderFoModifiedNodal().
  *
- *  \param Matrix [INTEGER]
+ *  >>> Arguments:
+ *  Matrix  <input>  (long *) [INTEGER]
  *      Pointer to the matrix.
- *  \param RHS [REAL(1) or DOUBLE PRECISION(1)]
+ *  RHS  <output>  (RealVector) [REAL(1) or DOUBLE PRECISION(1)]
  *      RHS is the right hand side. This is what is being solved for.
- *  \param Solution [REAL(1) or DOUBLE PRECISION(1)]
+ *  Solution  <input>  (RealVector) [REAL(1) or DOUBLE PRECISION(1)]
  *      Solution is the vector being multiplied by the matrix.
- *  \param iRHS [REAL(1) or DOUBLE PRECISION(1)]
+ *  iRHS  <output>  (RealVector) [REAL(1) or DOUBLE PRECISION(1)]
  *      iRHS is the imaginary portion of the right hand side. This is
  *      what is being solved for.  This is only necessary if the matrix is
  *      complex and spSEPARATED_COMPLEX_VECTORS is true.
- *  \param iSolution [REAL(1) or DOUBLE PRECISION(1)]
+ *  iSolution  <input>  (RealVector) [REAL(1) or DOUBLE PRECISION(1)]
  *      iSolution is the imaginary portion of the vector being multiplied
  *      by the matrix. This is only necessary if the matrix is
  *      complex and spSEPARATED_COMPLEX_VECTORS is true.
+ *
+ *  >>> Obscure Macros
+ *  IMAG_VECTORS
+ *	Replaces itself with `, iRHS, iSolution' if the options spCOMPLEX and
+ *	spSEPARATED_COMPLEX_VECTORS are set, otherwise it disappears
+ *	without a trace.
  */
 
 void
-sfMultiply( 
-    long *Matrix,
-    spREAL RHS[],
-    spREAL Solution[]
-#if spCOMPLEX AND spSEPARATED_COMPLEX_VECTORS
-    , spREAL iRHS[]
-    , spREAL iSolution[]
-#endif
-)
+sfMultiply( Matrix, RHS, Solution IMAG_VECTORS )
+
+long *Matrix;
+RealVector Solution, RHS IMAG_VECTORS;
 {
 /* Begin `sfMultiply'. */
     spMultiply( (spMatrix)*Matrix, RHS, Solution IMAG_VECTORS );
@@ -1313,39 +1375,42 @@ sfMultiply(
 
 
 #if MULTIPLICATION AND TRANSPOSE
-/*  TRANSPOSED MATRIX MULTIPLICATION */
-/*!
+/*
+ *  TRANSPOSED MATRIX MULTIPLICATION
+ *
  *  Multiplies transposed matrix by solution vector to find source vector.
  *  Assumes matrix has not been factored.  This routine can be used
  *  as a test to see if solutions are correct.  It should not be used
  *  before PreorderFoModifiedNodal().
  *
- *  \param Matrix [INTEGER]
+ *  >>> Arguments:
+ *  Matrix  <input>  (long *) [INTEGER]
  *      Pointer to the matrix.
- *  \param RHS [REAL(1) or DOUBLE PRECISION(1)]
+ *  RHS  <output>  (RealVector) [REAL(1) or DOUBLE PRECISION(1)]
  *      RHS is the right hand side. This is what is being solved for.
- *  \param Solution [REAL(1) or DOUBLE PRECISION(1)]
+ *  Solution  <input>  (RealVector) [REAL(1) or DOUBLE PRECISION(1)]
  *      Solution is the vector being multiplied by the matrix.
- *  \param iRHS [REAL(1) or DOUBLE PRECISION(1)]
+ *  iRHS  <output>  (RealVector) [REAL(1) or DOUBLE PRECISION(1)]
  *      iRHS is the imaginary portion of the right hand side. This is
  *      what is being solved for.  This is only necessary if the matrix is
  *      complex and spSEPARATED_COMPLEX_VECTORS is true.
- *  \param iSolution [REAL(1) or DOUBLE PRECISION(1)]
+ *  iSolution  <input>  (RealVector) [REAL(1) or DOUBLE PRECISION(1)]
  *      iSolution is the imaginary portion of the vector being multiplied
  *      by the matrix. This is only necessary if the matrix is
  *      complex and spSEPARATED_COMPLEX_VECTORS is true.
+ *
+ *  >>> Obscure Macros
+ *  IMAG_VECTORS
+ *	Replaces itself with `, iRHS, iSolution' if the options spCOMPLEX and
+ *	spSEPARATED_COMPLEX_VECTORS are set, otherwise it disappears
+ *	without a trace.
  */
 
 void
-sfMultTransposed(
-    long *Matrix,
-    spREAL RHS[],
-    spREAL Solution[]
-#if spCOMPLEX AND spSEPARATED_COMPLEX_VECTORS
-    , spREAL iRHS[]
-    , spREAL iSolution[]
-#endif
-)
+sfMultTransposed( Matrix, RHS, Solution IMAG_VECTORS )
+
+long *Matrix;
+RealVector Solution, RHS IMAG_VECTORS;
 {
 /* Begin `sfMultTransposed'. */
     spMultTransposed( (spMatrix)*Matrix, RHS, Solution IMAG_VECTORS );
@@ -1359,8 +1424,9 @@ sfMultTransposed(
 
 #if DETERMINANT
 
-/*  CALCULATE DETERMINANT */
-/*!
+/*
+ *  CALCULATE DETERMINANT
+ *
  *  This routine in capable of calculating the determinant of the
  *  matrix once the LU factorization has been performed.  Hence, only
  *  use this routine after spFactor() and before spClear().
@@ -1374,17 +1440,18 @@ sfMultTransposed(
  *  point number.  For this reason the determinant is scaled to a
  *  reasonable value and the logarithm of the scale factor is returned.
  *
- *  \param Matrix [INTEGER]
+ *  >>> Arguments:
+ *  Matrix  <input>  (long *) [INTEGER]
  *      A pointer to the matrix for which the determinant is desired.
- *  \param pExponent [INTEGER or INTEGER*2]
+ *  pExponent  <output>  (int *) [INTEGER or INTEGER*2]
  *      The logarithm base 10 of the scale factor for the determinant.  To
  *	find
  *      the actual determinant, Exponent should be added to the exponent of
  *      DeterminantReal.
- *  \param pDeterminant [REAL or DOUBLE PRECISION]
+ *  pDeterminant  <output>  (RealNumber *)  [REAL or DOUBLE PRECISION]
  *      The real portion of the determinant.   This number is scaled to be
  *      greater than or equal to 1.0 and less than 10.0.
- *  \param piDeterminant [REAL or DOUBLE PRECISION]
+ *  piDeterminant  <output>  (RealNumber *) [REAL or DOUBLE PRECISION]
  *      The imaginary portion of the determinant.  When the matrix is real
  *      this pointer need not be supplied, nothing will be returned.   This
  *      number is scaled to be greater than or equal to 1.0 and less than 10.0.
@@ -1393,12 +1460,11 @@ sfMultTransposed(
 #if spCOMPLEX
 
 void
-sfDeterminant(
-    long *Matrix,
-    spREAL *pDeterminant,
-    spREAL *piDeterminant,
-    int  *pExponent
-)
+sfDeterminant( Matrix, pExponent, pDeterminant, piDeterminant )
+
+long *Matrix;
+RealNumber *pDeterminant, *piDeterminant;
+int  *pExponent;
 {
 /* Begin `sfDeterminant'. */
     spDeterminant( (spMatrix)*Matrix, pExponent, pDeterminant, piDeterminant );
@@ -1424,19 +1490,23 @@ int  *pExponent;
 
 
 
-/*  RETURN MATRIX ERROR STATUS */
-/*!
+/*
+ *  RETURN MATRIX ERROR STATUS
+ *
  *  This function is used to determine the error status of the given matrix.
  *
- *  \return [INTEGER or INTEGER*2]
+ *  >>> Returned: [INTEGER or INTEGER*2]
  *     The error status of the given matrix.
  *
- *  \param Matrix [INTEGER]
+ *  >>> Arguments:
+ *  Matrix  <input>  (long *) [INTEGER]
  *     The matrix for which the error status is desired.
  */
 
 int
-sfErrorState( long  *Matrix )
+sfErrorState( Matrix )
+
+long  *Matrix;
 {
 /* Begin `sfError'. */
     return spErrorState( (spMatrix)*Matrix );
@@ -1447,16 +1517,20 @@ sfErrorState( long  *Matrix )
 
 
 
-/*  PRINT MATRIX ERROR MESSAGE */
-/*!
+/*
+ *  PRINT MATRIX ERROR MESSAGE
+ *
  *  This function prints a Sparse error message to stderr.
  *
- *  \param Matrix [INTEGER]
+ *  >>> Arguments:
+ *  Matrix  <input>  (long *) [INTEGER]
  *     The matrix for which the error message is desired.
  */
 
 void
-sfErrorMessage( long  *Matrix )
+sfErrorMessage( Matrix )
+
+long  *Matrix;
 {
 /* Begin `sfErrorMessage'. */
     spErrorMessage( (spMatrix)*Matrix, stderr, NULL );
@@ -1467,21 +1541,26 @@ sfErrorMessage( long  *Matrix )
 
 
 
-/*  WHERE IS MATRIX SINGULAR */
-/*!
+/*
+ *  WHERE IS MATRIX SINGULAR
+ *
  *  This function returns the row and column number where the matrix was
  *  detected as singular or where a zero was detected on the diagonal.
  *
- *  \param Matrix [INTEGER]
+ *  >>> Arguments:
+ *  Matrix  <input>  (long *) [INTEGER]
  *     The matrix for which the error status is desired.
- *  \param pRow  [INTEGER or INTEGER*2]
+ *  pRow  <output>  (int *) [INTEGER or INTEGER*2]
  *     The row number.
- *  \param pCol  [INTEGER or INTEGER*2]
+ *  pCol  <output>  (int *) [INTEGER or INTEGER*2]
  *     The column number.
  */
 
 void
-sfWhereSingular( long *Matrix, int *Row, int *Col )
+sfWhereSingular( Matrix, Row, Col )
+
+long *Matrix;
+int *Row, *Col;
 {
 /* Begin `sfWhereSingular'. */
     spWhereSingular( (spMatrix)*Matrix, Row, Col );
@@ -1491,14 +1570,16 @@ sfWhereSingular( long *Matrix, int *Row, int *Col )
 
 
 
-/*   MATRIX SIZE */
-/*!
+/*
+ *   MATRIX SIZE
+ *
  *   Returns the size of the matrix.  Either the internal or external size of
  *   the matrix is returned.
  *
- *   \param Matrix [INTEGER]
+ *   >>> Arguments:
+ *   Matrix  <input>  (long *) [INTEGER]
  *       Pointer to matrix.
- *   \param External [LOGICAL]
+ *   External  <input>  (BOOLEAN) [LOGICAL]
  *       If External is set true, the external size , i.e., the value of the
  *       largest external row or column number encountered is returned.
  *       Otherwise the true size of the matrix is returned.  These two sizes
@@ -1506,7 +1587,9 @@ sfWhereSingular( long *Matrix, int *Row, int *Col )
  */
 
 int
-sfGetSize( long  *Matrix, long *External )
+sfGetSize( Matrix, External )
+
+long  *Matrix, *External;
 {
 /* Begin `sfGetSize'. */
     return spGetSize( (spMatrix)*Matrix, (BOOLEAN)*External );
@@ -1519,32 +1602,30 @@ sfGetSize( long  *Matrix, long *External )
 
 
 
-/*   SET MATRIX REAL */
-/*!
- *   Forces matrix to be real.
+/*
+ *   SET MATRIX COMPLEX OR REAL
  *
- *   \param Matrix [INTEGER]
+ *   Forces matrix to be either real or complex.
+ *
+ *   >>> Arguments:
+ *   Matrix  <input>  (long *) [INTEGER]
  *       Pointer to matrix.
  */
 
 void
-sfSetReal( long *Matrix )
+sfSetReal( Matrix )
+
+long *Matrix;
 {
 /* Begin `sfSetReal'. */
     spSetReal( (spMatrix)*Matrix );
 }
 
 
-/*   SET MATRIX COMPLEX */
-/*!
- *   Forces matrix to be complex.
- *
- *   \param Matrix [INTEGER]
- *       Pointer to matrix.
- */
-
 void
-sfSetComplex( long *Matrix )
+sfSetComplex( Matrix )
+
+long *Matrix;
 {
 /* Begin `sfSetComplex'. */
     spSetComplex( (spMatrix)*Matrix );
@@ -1558,34 +1639,31 @@ sfSetComplex( long *Matrix )
 
 
 
-/*   FILL-IN COUNT */
-/*!
- *   Returns the number of fill-ins in the matrix.
+/*
+ *   ELEMENT OR FILL-IN COUNT
+ *
+ *   Two functions used to return simple statistics.  Either the number
+ *   of total elements, or the number of fill-ins can be returned.
  *
  *   >>> Arguments:
- *   Matrix [INTEGER]
+ *   Matrix  <input>  (long *) [INTEGER]
  *       Pointer to matrix.
  */
 
 int
-sfFillinCount( long *Matrix )
+sfFillinCount( Matrix )
+
+long *Matrix;
 {
 /* Begin `sfFillinCount'. */
     return spFillinCount( (spMatrix)*Matrix );
 }
 
 
-/*   ELEMENT COUNT */
-/*!
- *   Returns the total number of total elements in the matrix.
- *
- *   >>> Arguments:
- *   Matrix [INTEGER]
- *       Pointer to matrix.
- */
-
 int
-sfElementCount( long *Matrix )
+sfElementCount( Matrix )
+
+long *Matrix;
 {
 /* Begin `sfElementCount'. */
     return spElementCount( (spMatrix)*Matrix );
@@ -1598,23 +1676,28 @@ sfElementCount( long *Matrix )
 
 #if TRANSLATE AND DELETE
 
-/*  DELETE A ROW AND COLUMN FROM THE MATRIX */
-/*!
+/*
+ *  DELETE A ROW AND COLUMN FROM THE MATRIX
+ *
  *  Deletes a row and a column from a matrix.
  *
  *  Sparse will abort if an attempt is made to delete a row or column that
  *  doesn't exist.
  *
- *  \param Matrix [INTEGER]
+ *  >>> Arguments:
+ *  Matrix  <input>  (long *) [INTEGER]
  *     Pointer to the matrix in which the row and column are to be deleted.
- *  \param Row [INTEGER or INTEGER*2]
+ *  Row  <input>  (int) [INTEGER or INTEGER*2]
  *     Row to be deleted.
- *  \param Col [INTEGER or INTEGER*2]
+ *  Col  <input>  (int) [INTEGER or INTEGER*2]
  *     Column to be deleted.
  */
 
 void
-sfDeleteRowAndCol( long *Matrix, int *Row, int *Col )
+sfDeleteRowAndCol( Matrix, Row, Col )
+
+long *Matrix;
+int  *Row, *Col;
 {
 /* Begin `sfDeleteRowAndCol'. */
     spDeleteRowAndCol( (spMatrix)*Matrix, *Row, *Col );
@@ -1627,8 +1710,9 @@ sfDeleteRowAndCol( long *Matrix, int *Row, int *Col )
 
 #if PSEUDOCONDITION
 
-/*  CALCULATE PSEUDOCONDITION */
-/*!
+/*
+ *  CALCULATE PSEUDOCONDITION
+ *
  *  Computes the magnitude of the ratio of the largest to the smallest
  *  pivots.  This quantity is an indicator of ill-conditioning in the
  *  matrix.  If this ratio is large, and if the matrix is scaled such
@@ -1641,16 +1725,19 @@ sfDeleteRowAndCol( long *Matrix, int *Row, int *Col )
  *  to compute than the condition number calculated by sfCondition(), but
  *  is not as informative.
  *
- *  \return [REAL or DOUBLE PRECISION]
+ *  >>> Returns: [REAL or DOUBLE PRECISION]
  *  The magnitude of the ratio of the largest to smallest pivot used during
  *  previous factorization.  If the matrix was singular, zero is returned.
  *
- *  \param Matrix [INTEGER]
+ *  >>> Arguments:
+ *  Matrix  <input>  (long *)
  *     Pointer to the matrix.
  */
 
-spREAL
-sfPseudoCondition( long *Matrix )
+RealNumber
+sfPseudoCondition( Matrix )
+
+long *Matrix;
 {
 /* Begin `sfPseudoCondition'. */
     return spPseudoCondition( (spMatrix)Matrix );
@@ -1665,8 +1752,9 @@ sfPseudoCondition( long *Matrix )
 
 #if CONDITION
 
-/*  ESTIMATE CONDITION NUMBER */
-/*!
+/*
+ *  ESTIMATE CONDITION NUMBER
+ *
  *  Computes an estimate of the condition number using a variation on
  *  the LINPACK condition number estimation algorithm.  This quantity is
  *  an indicator of ill-conditioning in the matrix.  To avoid problems
@@ -1683,7 +1771,7 @@ sfPseudoCondition( long *Matrix )
  *  Sparse placing ones on the diagonal of the upper triangular matrix
  *  rather than the lower.  This difference should be of no importance.
  *
- *  \b References:
+ *  References:
  *  A.K. Cline, C.B. Moler, G.W. Stewart, J.H. Wilkinson.  An estimate
  *  for the condition number of a matrix.  SIAM Journal on Numerical
  *  Analysis.  Vol. 16, No. 2, pages 368-375, April 1979.
@@ -1699,22 +1787,30 @@ sfPseudoCondition( long *Matrix )
  *  Journal on Scientific and Statistical Computing.  Vol. 1, No. 2,
  *  pages 205-209, June 1980.
  *
- *  \return [REAL or DOUBLE PRECISION]
+ *  >>> Returns: [REAL or DOUBLE PRECISION]
  *  The reciprocal of the condition number.  If the matrix was singular,
  *  zero is returned.
  *
- *  \param Matrix [INTEGER]
+ *  >>> Arguments:
+ *  eMatrix  <input>  (long *)
  *	Pointer to the matrix.
- *  \param NormOfMatrix [REAL or DOUBLE PRECISION]
+ *  NormOfMatrix  <input>  (RealNumber *) [REAL or DOUBLE PRECISION]
  *	The L-infinity norm of the unfactored matrix as computed by
  *	spNorm().
- *  \param pError [INTEGER or INTEGER*2]
- *	Used to return error code.  Possible errors include \a spSINGULAR
- *      and \a spNO_MEMORY.
+ *  pError  <output>  (int *) [INTEGER or INTEGER*2]
+ *	Used to return error code.
+ *
+ *  >>> Possible errors:
+ *  spSINGULAR
+ *  spNO_MEMORY
  */
 
-spREAL
-sfCondition( long *Matrix, spREAL *NormOfMatrix, int *pError )
+RealNumber
+sfCondition( Matrix, NormOfMatrix, pError )
+
+long *Matrix;
+RealNumber *NormOfMatrix;
+int *pError;
 {
 /* Begin `sfCondition'. */
     return spCondition( (spMatrix)*Matrix, *NormOfMatrix, pError );
@@ -1724,20 +1820,26 @@ sfCondition( long *Matrix, spREAL *NormOfMatrix, int *pError )
 
 
 
-/*  L-INFINITY MATRIX NORM */
-/*!
+/*
+ *  L-INFINITY MATRIX NORM 
+ *
  *  Computes the L-infinity norm of an unfactored matrix.  It is a fatal
  *  error to pass this routine a factored matrix.
  *
- *  \return [REAL or DOUBLE PRECISION]
+ *  One difficulty is that the rows may not be linked.
+ *
+ *  >>> Returns: [REAL or DOUBLE PRECISION]
  *  The largest absolute row sum of matrix.
  *
- *  \param Matrix [INTEGER]
+ *  >>> Arguments:
+ *  Matrix  <input>  (long *)
  *     Pointer to the matrix.
  */
 
-spREAL
-sfNorm( long *Matrix )
+RealNumber
+sfNorm( Matrix )
+
+long *Matrix;
 {
 /* Begin `sfNorm'. */
     return spNorm( (spMatrix)*Matrix );
@@ -1750,27 +1852,76 @@ sfNorm( long *Matrix )
 
 #if STABILITY
 
-/*  LARGEST ELEMENT IN MATRIX */
-/*!
- *  spLargestElement() finds the magnitude on the largest element in the
+/*
+ *  STABILITY OF FACTORIZATION
+ *
+ *  The following routines are used to gauge the stability of a
+ *  factorization.  If the factorization is determined to be too unstable,
+ *  then the matrix should be reordered.  The routines compute quantities
+ *  that are needed in the computation of a bound on the error attributed
+ *  to any one element in the matrix during the factorization.  In other
+ *  words, there is a matrix E = [e_ij] of error terms such that A+E = LU.
+ *  This routine finds a bound on |e_ij|.  Erisman & Reid [1] showed that
+ *  |e_ij| < 3.01 u rho m_ij, where u is the machine rounding unit,
+ *  rho = max a_ij where the max is taken over every row i, column j, and
+ *  step k, and m_ij is the number of multiplications required in the
+ *  computation of l_ij if i > j or u_ij otherwise.  Barlow [2] showed that
+ *  rho < max_i || l_i ||_p max_j || u_j ||_q where 1/p + 1/q = 1.
+ *
+ *  The first routine finds the magnitude on the largest element in the
  *  matrix.  If the matrix has not yet been factored, the largest
  *  element is found by direct search.  If the matrix is factored, a
  *  bound on the largest element in any of the reduced submatrices is
- *  computed.
+ *  computed using Barlow with p = oo and q = 1.  The ratio of these
+ *  two numbers is the growth, which can be used to determine if the
+ *  pivoting order is adequate.  A large growth implies that
+ *  considerable error has been made in the factorization and that it
+ *  is probably a good idea to reorder the matrix.  If a large growth
+ *  in encountered after using spFactor(), reconstruct the matrix and
+ *  refactor using spOrderAndFactor().  If a large growth is
+ *  encountered after using spOrderAndFactor(), refactor using
+ *  spOrderAndFactor() with the pivot threshold increased, say to 0.1.
  *
- *  \return [REAL or DOUBLE PRECISION]
+ *  Using only the size of the matrix as an upper bound on m_ij and
+ *  Barlow's bound, the user can estimate the size of the matrix error
+ *  terms e_ij using the bound of Erisman and Reid.  The second routine
+ *  computes a tighter bound (with more work) based on work by Gear
+ *  [3], |e_ij| < 1.01 u rho (t c^3 + (1 + t)c^2) where t is the
+ *  threshold and c is the maximum number of off-diagonal elements in
+ *  any row of L.  The expensive part of computing this bound is
+ *  determining the maximum number of off-diagonals in L, which changes
+ *  only when the order of the matrix changes.  This number is computed
+ *  and saved, and only recomputed if the matrix is reordered.
+ *
+ *  [1] A. M. Erisman, J. K. Reid.  Monitoring the stability of the
+ *      triangular factorization of a sparse matrix.  Numerische
+ *      Mathematik.  Vol. 22, No. 3, 1974, pp 183-186.
+ *
+ *  [2] J. L. Barlow.  A note on monitoring the stability of triangular
+ *      decomposition of sparse matrices.  "SIAM Journal of Scientific
+ *      and Statistical Computing."  Vol. 7, No. 1, January 1986, pp 166-168.
+ *
+ *  [3] I. S. Duff, A. M. Erisman, J. K. Reid.  "Direct Methods for Sparse
+ *      Matrices."  Oxford 1986. pp 99.
+ */
+
+/*
+ *  LARGEST ELEMENT IN MATRIX
+ *
+ *  >>> Returns: [REAL or DOUBLE PRECISION]
  *  If matrix is not factored, returns the magnitude of the largest element in
  *  the matrix.  If the matrix is factored, a bound on the magnitude of the
  *  largest element in any of the reduced submatrices is returned.
  *
- *  \param Matrix [INTEGER]
+ *  >>> Arguments:
+ *  Matrix  <input>  (long *) [INTEGER]
  *     Pointer to the matrix.
- *
- *  \see spLargestElement()
  */
 
-spREAL
-sfLargestElement( long *Matrix )
+RealNumber
+sfLargestElement( Matrix )
+
+long *Matrix;
 {
 /* Begin `sfLargestElement'. */
     return spLargestElement( (spMatrix)Matrix );
@@ -1779,27 +1930,27 @@ sfLargestElement( long *Matrix )
 
 
 
-/*  MATRIX ROUNDOFF ERROR */
-/*!
- *  This routine, along with spLargestElement(), are used to gauge the
- *  stability of a factorization. See description of spLargestElement()
- *  for more information.
+/*
+ *  MATRIX ROUNDOFF ERROR
  *
- *  \return [REAL or DOUBLE PRECISION]
+ *  >>> Returns: [REAL or DOUBLE PRECISION]
  *  Returns a bound on the magnitude of the largest element in E = A - LU.
  *
- *  \param Matrix [INTEGER]
+ *  >>> Arguments:
+ *  Matrix  <input>  (long *) [INTEGER]
  *	Pointer to the matrix.
- *  \param Rho [REAL or DOUBLE PRECISION]
+ *  Rho  <input>  (RealNumber *) [REAL or DOUBLE PRECISION]
  *	The bound on the magnitude of the largest element in any of the
  *	reduced submatrices.  This is the number computed by the function
  *	spLargestElement() when given a factored matrix.  If this number is
  *	negative, the bound will be computed automatically.
- *  \see spRoundoff()
  */
 
-spREAL
-sfRoundoff( long *Matrix, spREAL *Rho )
+RealNumber
+sfRoundoff( Matrix, Rho )
+
+long *Matrix;
+RealNumber *Rho;
 {
 /* Begin `sfRoundoff'. */
     return spRoundoff( (spMatrix)*Matrix, *Rho );

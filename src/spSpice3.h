@@ -21,10 +21,20 @@
 /*
  *  Revision and copyright information.
  *
- *  Copyright (c) 1985-2003 by Kenneth S. Kundert
+ *  Copyright (c) 1985-1993
+ *  by Kenneth S. Kundert and the University of California.
  *
- *  $Date: 2003/06/29 04:19:52 $
- *  $Revision: 1.2 $
+ *  Permission to use, copy, modify, and distribute this software and
+ *  its documentation for any purpose and without fee is hereby granted,
+ *  provided that the copyright notices appear in all copies and
+ *  supporting documentation and that the authors and the University of
+ *  California are properly credited.  The authors and the University of
+ *  California make no representations as to the suitability of this
+ *  software for any purpose.  It is provided `as is', without express
+ *  or implied warranty.
+ *
+ *  $Date: 2003/06/05 07:06:32 $
+ *  $Revision: 1.1.1.1 $
  */
 
 
@@ -286,65 +296,106 @@ struct  spTemplate
 
 /* Begin function declarations. */
 
-spcEXTERN  void     spClear( char* );
-spcEXTERN  spREAL   spCondition( char*, spREAL, int* );
-spcEXTERN  char    *spCreate( int, int, int* );
-spcEXTERN  void     spDeleteRowAndCol( char*, int, int );
-spcEXTERN  void     spDestroy( char* );
-spcEXTERN  int      spElementCount( char* );
-spcEXTERN  int      spError( char* );
-spcEXTERN  int      spFactor( char* );
-spcEXTERN  int      spFileMatrix( char*, char*, char*, int, int, int );
-spcEXTERN  int      spFileStats( char*, char*, char* );
-spcEXTERN  int      spFillinCount( char* );
-spcEXTERN  int      spGetAdmittance( char*, int, int,
-				struct spTemplate* );
-spcEXTERN  spREAL  *spGetElement( char*, int, int );
-spcEXTERN  char    *spGetInitInfo( spREAL* );
-spcEXTERN  int      spGetOnes( char*, int, int, int,
-				struct spTemplate* );
-spcEXTERN  int      spGetQuad( char*, int, int, int, int,
-				struct spTemplate* );
-spcEXTERN  int      spGetSize( char*, int );
-spcEXTERN  int      spInitialize( char*, int (*)() );
-spcEXTERN  void     spInstallInitInfo( spREAL*, char* );
-spcEXTERN  spREAL   spLargestElement( char* );
-spcEXTERN  void     spMNA_Preorder( char* );
-spcEXTERN  spREAL   spNorm( char* );
-spcEXTERN  int      spOrderAndFactor( char*, spREAL[], spREAL,
-				spREAL, int );
-spcEXTERN  void     spPartition( char*, int );
-spcEXTERN  void     spPrint( char*, int, int, int );
-spcEXTERN  spREAL   spPseudoCondition( char* );
-spcEXTERN  spREAL   spRoundoff( char*, spREAL );
-spcEXTERN  void     spScale( char*, spREAL[], spREAL[] );
-spcEXTERN  void     spSetComplex( char* );
-spcEXTERN  void     spSetReal( char* );
-spcEXTERN  void     spStripFills( char* );
-spcEXTERN  void     spWhereSingular( char*, int*, int* );
+spcEXTERN  void     spClear spcARGS(( char* ));
+spcEXTERN  spREAL   spCondition spcARGS(( char*, spREAL, int* ));
+spcEXTERN  char    *spCreate spcARGS(( int, int, int* ));
+spcEXTERN  void     spDeleteRowAndCol spcARGS(( char*, int, int ));
+spcEXTERN  void     spDestroy spcARGS(( char* ));
+spcEXTERN  int      spElementCount spcARGS(( char* ));
+spcEXTERN  int      spError spcARGS(( char* ));
+spcEXTERN  int      spFactor spcARGS(( char* ));
+spcEXTERN  int      spFileMatrix spcARGS(( char*, char*, char*, int, int,
+				int ));
+spcEXTERN  int      spFileStats spcARGS(( char*, char*, char* ));
+spcEXTERN  int      spFillinCount spcARGS(( char* ));
+spcEXTERN  int      spGetAdmittance spcARGS(( char*, int, int,
+				struct spTemplate* ));
+spcEXTERN  spREAL  *spGetElement spcARGS(( char*, int, int ));
+spcEXTERN  char    *spGetInitInfo spcARGS(( spREAL* ));
+spcEXTERN  int      spGetOnes spcARGS(( char*, int, int, int,
+				struct spTemplate* ));
+spcEXTERN  int      spGetQuad spcARGS(( char*, int, int, int, int,
+				struct spTemplate* ));
+spcEXTERN  int      spGetSize spcARGS(( char*, int ));
+spcEXTERN  int      spInitialize spcARGS(( char*, int (*)() ));
+spcEXTERN  void     spInstallInitInfo spcARGS(( spREAL*, char* ));
+spcEXTERN  spREAL   spLargestElement spcARGS(( char* ));
+spcEXTERN  void     spMNA_Preorder spcARGS(( char* ));
+spcEXTERN  spREAL   spNorm spcARGS(( char* ));
+spcEXTERN  int      spOrderAndFactor spcARGS(( char*, spREAL[], spREAL,
+				spREAL, int ));
+spcEXTERN  void     spPartition spcARGS(( char*, int ));
+spcEXTERN  void     spPrint spcARGS(( char*, int, int, int ));
+spcEXTERN  spREAL   spPseudoCondition spcARGS(( char* ));
+spcEXTERN  spREAL   spRoundoff spcARGS(( char*, spREAL ));
+spcEXTERN  void     spScale spcARGS(( char*, spREAL[], spREAL[] ));
+spcEXTERN  void     spSetComplex spcARGS(( char* ));
+spcEXTERN  void     spSetReal spcARGS(( char* ));
+spcEXTERN  void     spStripFills spcARGS(( char* ));
+spcEXTERN  void     spWhereSingular spcARGS(( char*, int*, int* ));
 
 /* Functions with argument lists that are dependent on options. */
 
 #if spCOMPLEX
-spcEXTERN  void     spDeterminant( char*, int*, spREAL*, spREAL* );
+spcEXTERN  void     spDeterminant  spcARGS(( char*, int*, spREAL*, spREAL* ));
 #else /* NOT spCOMPLEX */
-spcEXTERN  void     spDeterminant( char*, int*, spREAL* );
+spcEXTERN  void     spDeterminant  spcARGS(( char*, int*, spREAL* ));
 #endif /* NOT spCOMPLEX */
 #if spCOMPLEX && spSEPARATED_COMPLEX_VECTORS
-spcEXTERN  int      spFileVector( char*, char* , spREAL[], spREAL[]);
-spcEXTERN  void     spMultiply( char*, spREAL[], spREAL[], spREAL[],
-				spREAL[] );
-spcEXTERN  void     spMultTransposed( char*, spREAL[], spREAL[],
-				spREAL[], spREAL[] );
-spcEXTERN  void     spSolve( char*, spREAL[], spREAL[], spREAL[],
-				spREAL[] );
-spcEXTERN  void     spSolveTransposed( char*, spREAL[], spREAL[],
-				spREAL[], spREAL[] );
-#else /* NOT  (spCOMPLEX && spSEPARATED_COMPLEX_VECTORS) */
-spcEXTERN  int      spFileVector( char*, char* , spREAL[] );
-spcEXTERN  void     spMultiply( char*, spREAL[], spREAL[] );
-spcEXTERN  void     spMultTransposed( char*, spREAL[], spREAL[] );
-spcEXTERN  void     spSolve( char*, spREAL[], spREAL[] );
-spcEXTERN  void     spSolveTransposed( char*, spREAL[], spREAL[] );
-#endif /* NOT  (spCOMPLEX && spSEPARATED_COMPLEX_VECTORS) */
+spcEXTERN  int      spFileVector spcARGS(( char*, char* , spREAL[], spREAL[]));
+spcEXTERN  void     spMultiply spcARGS(( char*, spREAL[], spREAL[], spREAL[],
+				spREAL[] ));
+spcEXTERN  void     spMultTransposed spcARGS(( char*, spREAL[], spREAL[],
+				spREAL[], spREAL[] ));
+spcEXTERN  void     spSolve spcARGS(( char*, spREAL[], spREAL[], spREAL[],
+				spREAL[] ));
+spcEXTERN  void     spSolveTransposed spcARGS(( char*, spREAL[], spREAL[],
+				spREAL[], spREAL[] ));
+#else /* NOT  spcARGS((spCOMPLEX && spSEPARATED_COMPLEX_VECTORS)) */
+spcEXTERN  int      spFileVector spcARGS(( char*, char* , spREAL[] ));
+spcEXTERN  void     spMultiply spcARGS(( char*, spREAL[], spREAL[] ));
+spcEXTERN  void     spMultTransposed spcARGS(( char*, spREAL[], spREAL[] ));
+spcEXTERN  void     spSolve spcARGS(( char*, spREAL[], spREAL[] ));
+spcEXTERN  void     spSolveTransposed spcARGS(( char*, spREAL[], spREAL[] ));
+#endif /* NOT  spcARGS((spCOMPLEX && spSEPARATED_COMPLEX_VECTORS)) */
+
+
+#if spCOMPATIBILITY
+spcEXTERN  char    *AllocateMatrix();
+spcEXTERN  spREAL  *AddElementToMatrix();
+spcEXTERN  void     AddRealElementToMatrix();
+spcEXTERN  void     AddImagElementToMatrix();
+spcEXTERN  void     AddComplexElementToMatrix();
+spcEXTERN  void     AddAdmittanceToMatrix();
+spcEXTERN  void     AddOnesToMatrix();
+spcEXTERN  void     AddQuadToMatrix();
+spcEXTERN  void     AddRealQuadElementToMatrix();
+spcEXTERN  void     AddImagQuadElementToMatrix();
+spcEXTERN  void     AddComplexQuadElementToMatrix();
+spcEXTERN  void     CleanMatrix();
+spcEXTERN  void     ClearMatrix();
+spcEXTERN  int      ClearMatrixError();
+spcEXTERN  void     DeallocateMatrix();
+spcEXTERN  void     DeleteRowAndColFromMatrix();
+spcEXTERN  void     Determinant();
+spcEXTERN  int      DecomposeMatrix();
+spcEXTERN  int      GetMatrixSize();
+spcEXTERN  int      MatrixElementCount();
+spcEXTERN  int      MatrixFillinCount();
+spcEXTERN  void     MatrixMultiply();
+spcEXTERN  spREAL   MatrixRoundoffError();
+spcEXTERN  int      MatrixError();
+spcEXTERN  int      OrderAndDecomposeMatrix();
+spcEXTERN  void     OutputMatrixToFile();
+spcEXTERN  void     OutputStatisticsToFile();
+spcEXTERN  void     OutputVectorToFile();
+spcEXTERN  void     PreorderForModifiedNodal();
+spcEXTERN  void     PrintMatrix();
+spcEXTERN  void     SetMatrixComplex();
+spcEXTERN  void     SetMatrixReal();
+spcEXTERN  void     SolveMatrix();
+spcEXTERN  void     SolveTransposedMatrix();
+spcEXTERN  void     ScaleMatrix();
+#endif /* spCOMPATIBILITY */
+
 #endif  /* spOKAY */

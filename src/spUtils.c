@@ -4,17 +4,10 @@
  *  Author:                     Advising professor:
  *      Kenneth S. Kundert          Alberto Sangiovanni-Vincentelli
  *      UC Berkeley
- */
-/*! \file
+ *
  *  This file contains various optional utility routines.
  *
- *  Objects that begin with the \a spc prefix are considered private
- *  and should not be used.
- *
- *  \author
- *  Kenneth S. Kundert <kundert@users.sourceforge.net>
- */
-/*  >>> User accessible functions contained in this file:
+ *  >>> User accessible functions contained in this file:
  *  spMNA_Preorder
  *  spScale
  *  spMultiply
@@ -41,14 +34,24 @@
 /*
  *  Revision and copyright information.
  *
- *  Copyright (c) 1985-2003 by Kenneth S. Kundert
+ *  Copyright (c) 1985-1993
+ *  by Kenneth S. Kundert and the University of California.
+ *
+ *  Permission to use, copy, modify, and distribute this software and
+ *  its documentation for any purpose and without fee is hereby granted,
+ *  provided that the copyright notices appear in all copies and
+ *  supporting documentation and that the authors and the University of
+ *  California are properly credited.  The authors and the University of
+ *  California make no representations as to the suitability of this
+ *  software for any purpose.  It is provided `as is', without express
+ *  or implied warranty.
  */
 
 #ifndef lint
 static char copyright[] =
-    "Sparse1.4: Copyright (c) 1985-2003 by Kenneth S. Kundert";
+    "Sparse1.3: Copyright (c) 1985-1993 by Kenneth S. Kundert";
 static char RCSid[] =
-    "@(#)$Header: /cvsroot/sparse/src/spUtils.c,v 1.4 2003/06/30 19:40:52 kundert Exp $";
+    "@(#)$Header: /cvsroot/sparse/src/spUtils.c,v 1.1.1.1 2003/06/05 07:06:42 kundert Exp $";
 #endif
 
 
@@ -79,21 +82,21 @@ static char RCSid[] =
  *  Function declarations
  */
 
-static int CountTwins( MatrixPtr, int, ElementPtr*, ElementPtr* );
-static void SwapCols( MatrixPtr, ElementPtr, ElementPtr );
-static void ScaleComplexMatrix( MatrixPtr, RealVector, RealVector );
+static int CountTwins spcARGS(( MatrixPtr, int, ElementPtr*, ElementPtr* ));
+static void SwapCols spcARGS(( MatrixPtr, ElementPtr, ElementPtr ));
+static void ScaleComplexMatrix spcARGS(( MatrixPtr, RealVector, RealVector ));
 #if spSEPARATED_COMPLEX_VECTORS
-static void ComplexMatrixMultiply( MatrixPtr,
-			RealVector, RealVector, RealVector, RealVector );
-static void ComplexTransposedMatrixMultiply( MatrixPtr,
-			RealVector, RealVector, RealVector, RealVector );
+static void ComplexMatrixMultiply spcARGS(( MatrixPtr,
+			RealVector, RealVector, RealVector, RealVector ));
+static void ComplexTransposedMatrixMultiply spcARGS(( MatrixPtr,
+			RealVector, RealVector, RealVector, RealVector ));
 #else
-static void ComplexMatrixMultiply( MatrixPtr,
-			RealVector, RealVector );
-static void ComplexTransposedMatrixMultiply( MatrixPtr,
-			RealVector, RealVector );
+static void ComplexMatrixMultiply spcARGS(( MatrixPtr,
+			RealVector, RealVector ));
+static void ComplexTransposedMatrixMultiply spcARGS(( MatrixPtr,
+			RealVector, RealVector ));
 #endif
-static RealNumber ComplexCondition( MatrixPtr, RealNumber, int* );
+static RealNumber ComplexCondition spcARGS(( MatrixPtr, RealNumber, int* ));
 
 
 
@@ -101,7 +104,9 @@ static RealNumber ComplexCondition( MatrixPtr, RealNumber, int* );
 
 
 #if MODIFIED_NODAL
-/*!
+/*
+ *  PREORDER MODIFIED NODE ADMITTANCE MATRIX TO REMOVE ZEROS FROM DIAGONAL
+ *
  *  This routine massages modified node admittance matrices to remove
  *  zeros from the diagonal.  It takes advantage of the fact that the
  *  row and column associated with a zero diagonal usually have
@@ -115,50 +120,44 @@ static RealNumber ComplexCondition( MatrixPtr, RealNumber, int* );
  *
  *  This routine exploits the fact that the structural ones are placed
  *  in the matrix in symmetric twins.  For example, the stamps for
- *  grounded and a floating voltage sources are \code
+ *  grounded and a floating voltage sources are
  *  grounded:              floating:
  *  [  x   x   1 ]         [  x   x   1 ]
  *  [  x   x     ]         [  x   x  -1 ]
  *  [  1         ]         [  1  -1     ]
- *  \endcode
  *  Notice for the grounded source, there is one set of twins, and for
  *  the floating, there are two sets.  We remove the zero from the diagonal
- *  by swapping the rows associated with a set of twins.  For example: \code
+ *  by swapping the rows associated with a set of twins.  For example:
  *  grounded:              floating 1:            floating 2:
  *  [  1         ]         [  1  -1     ]         [  x   x   1 ]
  *  [  x   x     ]         [  x   x  -1 ]         [  1  -1     ]
  *  [  x   x   1 ]         [  x   x   1 ]         [  x   x  -1 ]
- *  \endcode
  *
  *  It is important to deal with any zero diagonals that only have one
  *  set of twins before dealing with those that have more than one because
  *  swapping row destroys the symmetry of any twins in the rows being
- *  swapped, which may limit future moves.  Consider \code
+ *  swapped, which may limit future moves.  Consider
  *  [  x   x   1     ]
  *  [  x   x  -1   1 ]
  *  [  1  -1         ]
  *  [      1         ]
- *  \endcode
  *  There is one set of twins for diagonal 4 and two for diagonal 3.
- *  Dealing with diagonal 4 first requires swapping rows 2 and 4. \code
+ *  Dealing with diagonal 4 first requires swapping rows 2 and 4.
  *  [  x   x   1     ]
  *  [      1         ]
  *  [  1  -1         ]
  *  [  x   x  -1   1 ]
- *  \endcode
- *  We can now deal with diagonal 3 by swapping rows 1 and 3. \code
+ *  We can now deal with diagonal 3 by swapping rows 1 and 3.
  *  [  1  -1         ]
  *  [      1         ]
  *  [  x   x   1     ]
  *  [  x   x  -1   1 ]
- *  \endcode
  *  And we are done, there are no zeros left on the diagonal.  However, if
- *  we originally dealt with diagonal 3 first, we could swap rows 2 and 3 \code
+ *  we originally dealt with diagonal 3 first, we could swap rows 2 and 3
  *  [  x   x   1     ]
  *  [  1  -1         ]
  *  [  x   x  -1   1 ]
  *  [      1         ]
- *  \endcode
  *  Diagonal 4 no longer has a symmetric twin and we cannot continue.
  *
  *  So we always take care of lone twins first.  When none remain, we
@@ -171,10 +170,11 @@ static RealNumber ComplexCondition( MatrixPtr, RealNumber, int* );
  *  The algorithm used in this function was developed by Ken Kundert and
  *  Tom Quarles.
  *
- *  \param *  eMatrix 
+ *  >>> Arguments:
+ *  eMatrix  <input>  (char *)
  *      Pointer to the matrix to be preordered.
- */
-/*  >>> Local variables;
+ *
+ *  >>> Local variables;
  *  J  (int)
  *      Column with zero diagonal being currently considered.
  *  pTwin1  (ElementPtr)
@@ -194,7 +194,9 @@ static RealNumber ComplexCondition( MatrixPtr, RealNumber, int* );
  */
 
 void
-spMNA_Preorder( spMatrix eMatrix )
+spMNA_Preorder( eMatrix )
+
+spMatrix eMatrix;
 {
 MatrixPtr  Matrix = (MatrixPtr)eMatrix;
 register  int  J, Size;
@@ -256,12 +258,11 @@ BOOLEAN  Swapped, AnotherPassNeeded;
  */
 
 static int
-CountTwins(
-    MatrixPtr Matrix,
-    int Col,
-    ElementPtr *ppTwin1,
-    ElementPtr *ppTwin2
-)
+CountTwins( Matrix, Col, ppTwin1, ppTwin2 )
+
+MatrixPtr Matrix;
+int Col;
+ElementPtr *ppTwin1, *ppTwin2;
 {
 int Row, Twins = 0;
 ElementPtr pTwin1, pTwin2;
@@ -298,11 +299,10 @@ ElementPtr pTwin1, pTwin2;
  */
 
 static void
-SwapCols(
-    MatrixPtr Matrix,
-    ElementPtr pTwin1,
-    ElementPtr pTwin2
-)
+SwapCols( Matrix, pTwin1, pTwin2 )
+
+MatrixPtr Matrix;
+ElementPtr pTwin1, pTwin2;
 {
 int Col1 = pTwin1->Col, Col2 = pTwin2->Col;
 
@@ -331,7 +331,9 @@ int Col1 = pTwin1->Col, Col2 = pTwin2->Col;
 
 
 #if SCALING
-/*!
+/*
+ *  SCALE MATRIX
+ *
  *  This function scales the matrix to enhance the possibility of
  *  finding a good pivoting order.  Note that scaling enhances accuracy
  *  of the solution only if it affects the pivoting order, so it makes
@@ -361,18 +363,19 @@ int Col1 = pTwin1->Col, Col2 = pTwin2->Col;
  *  pivoting order, and then throw away the matrix.  Subsequent
  *  factorizations, performed with spFactor(), will not need to have
  *  the RHS and Solution vectors descaled.  Lastly, this function
- *  should not be executed before the function spMNA_Preorder().
+ *  should not be executed before the function spMNA_Preorder.
  *
- *  \param eMatrix
+ *  >>> Arguments:
+ *  eMatrix  <input> (char *)
  *      Pointer to the matrix to be scaled.
- *  \param SolutionScaleFactors
+ *  SolutionScaleFactors  <input>  (RealVector)
  *      The array of Solution scale factors.  These factors scale the columns.
  *      All scale factors are real valued.
- *  \param RHS_ScaleFactors
+ *  RHS_ScaleFactors  <input>  (RealVector)
  *      The array of RHS scale factors.  These factors scale the rows.
  *      All scale factors are real valued.
- */
-/*  >>> Local variables:
+ *
+ *  >>> Local variables:
  *  lSize  (int)
  *      Local version of the size of the matrix.
  *  pElement  (ElementPtr)
@@ -385,11 +388,10 @@ int Col1 = pTwin1->Col, Col2 = pTwin2->Col;
  */
 
 void
-spScale(
-    spMatrix eMatrix,
-    spREAL RHS_ScaleFactors[],
-    spREAL SolutionScaleFactors[]
-)
+spScale( eMatrix, RHS_ScaleFactors, SolutionScaleFactors )
+
+spMatrix eMatrix;
+register  RealVector  RHS_ScaleFactors, SolutionScaleFactors;
 {
 MatrixPtr  Matrix = (MatrixPtr)eMatrix;
 register ElementPtr  pElement;
@@ -516,11 +518,10 @@ void ScaleComplexMatrix();
  */
 
 static void
-ScaleComplexMatrix(
-    MatrixPtr Matrix,
-    register RealVector RHS_ScaleFactors,
-    register RealVector SolutionScaleFactors
-)
+ScaleComplexMatrix( Matrix, RHS_ScaleFactors, SolutionScaleFactors )
+
+MatrixPtr  Matrix;
+register  RealVector  RHS_ScaleFactors, SolutionScaleFactors;
 {
 register ElementPtr  pElement;
 register int  I, lSize, *pExtOrder;
@@ -574,38 +575,42 @@ RealNumber  ScaleFactor;
 
 
 #if MULTIPLICATION
-/*!
+/*
+ *  MATRIX MULTIPLICATION
+ *
  *  Multiplies matrix by solution vector to find source vector.
  *  Assumes matrix has not been factored.  This routine can be used
  *  as a test to see if solutions are correct.  It should not be used
  *  before spMNA_Preorder().
  *
- *  \param eMatrix
+ *  >>> Arguments:
+ *  eMatrix  <input>  (char *)
  *      Pointer to the matrix.
- *  \param RHS
+ *  RHS  <output>  (RealVector)
  *      RHS is the right hand side. This is what is being solved for.
- *  \param Solution
+ *  Solution  <input>  (RealVector)
  *      Solution is the vector being multiplied by the matrix.
- *  \param iRHS
+ *  iRHS  <output>  (RealVector)
  *      iRHS is the imaginary portion of the right hand side. This is
  *      what is being solved for.  This is only necessary if the matrix is
- *      complex and \a spSEPARATED_COMPLEX_VECTORS is true.
- *  \param iSolution
+ *      complex and spSEPARATED_COMPLEX_VECTORS is true.
+ *  iSolution  <input>  (RealVector)
  *      iSolution is the imaginary portion of the vector being multiplied
  *      by the matrix. This is only necessary if the matrix is
- *      complex and \a spSEPARATED_COMPLEX_VECTORS is true.
+ *      complex and spSEPARATED_COMPLEX_VECTORS is true.
+ *
+ *  >>> Obscure Macros
+ *  IMAG_VECTORS
+ *      Replaces itself with `, iRHS, iSolution' if the options spCOMPLEX and
+ *      spSEPARATED_COMPLEX_VECTORS are set, otherwise it disappears
+ *      without a trace.
  */
 
 void
-spMultiply(
-    spMatrix eMatrix,
-    spREAL RHS[],
-    spREAL Solution[]
-#if spCOMPLEX AND spSEPARATED_COMPLEX_VECTORS
-    , spREAL iRHS[]
-    , spREAL iSolution[]
-#endif
-)
+spMultiply( eMatrix, RHS, Solution IMAG_VECTORS )
+
+spMatrix eMatrix;
+RealVector RHS, Solution IMAG_VECTORS;
 {
 register  ElementPtr  pElement;
 register  RealVector  Vector;
@@ -691,18 +696,19 @@ extern void ComplexMatrixMultiply();
  *      iSolution is the imaginary portion of the vector being multiplied
  *      by the matrix. This is only necessary if the matrix is
  *      complex and spSEPARATED_COMPLEX_VECTORS is true.
+ *
+ *  >>> Obscure Macros
+ *  IMAG_VECTORS
+ *      Replaces itself with `, iRHS, iSolution' if the options spCOMPLEX and
+ *      spSEPARATED_COMPLEX_VECTORS are set, otherwise it disappears
+ *      without a trace.
  */
 
 static void
-ComplexMatrixMultiply(
-    MatrixPtr  Matrix,
-    RealVector RHS,
-    RealVector Solution
-#if spSEPARATED_COMPLEX_VECTORS
-    , RealVector iRHS
-    , RealVector iSolution
-#endif
-)
+ComplexMatrixMultiply( Matrix, RHS, Solution IMAG_VECTORS )
+
+MatrixPtr  Matrix;
+RealVector RHS, Solution IMAG_VECTORS;
 {
 register  ElementPtr  pElement;
 register  ComplexVector  Vector;
@@ -765,38 +771,42 @@ register  int  I, *pExtOrder;
 
 
 #if MULTIPLICATION AND TRANSPOSE
-/*!
+/*
+ *  TRANSPOSED MATRIX MULTIPLICATION
+ *
  *  Multiplies transposed matrix by solution vector to find source vector.
  *  Assumes matrix has not been factored.  This routine can be used
  *  as a test to see if solutions are correct.  It should not be used
  *  before spMNA_Preorder().
  *
- *  \param eMatrix
+ *  >>> Arguments:
+ *  eMatrix  <input>  (char *)
  *      Pointer to the matrix.
- *  \param RHS
+ *  RHS  <output>  (RealVector)
  *      RHS is the right hand side. This is what is being solved for.
- *  \param Solution
+ *  Solution  <input>  (RealVector)
  *      Solution is the vector being multiplied by the matrix.
- *  \param iRHS
+ *  iRHS  <output>  (RealVector)
  *      iRHS is the imaginary portion of the right hand side. This is
  *      what is being solved for.  This is only necessary if the matrix is
- *      complex and \a spSEPARATED_COMPLEX_VECTORS is true.
- *  \param iSolution
+ *      complex and spSEPARATED_COMPLEX_VECTORS is true.
+ *  iSolution  <input>  (RealVector)
  *      iSolution is the imaginary portion of the vector being multiplied
  *      by the matrix. This is only necessary if the matrix is
- *      complex and \a spSEPARATED_COMPLEX_VECTORS is true.
+ *      complex and spSEPARATED_COMPLEX_VECTORS is true.
+ *
+ *  >>> Obscure Macros
+ *  IMAG_VECTORS
+ *      Replaces itself with `, iRHS, iSolution' if the options spCOMPLEX and
+ *      spSEPARATED_COMPLEX_VECTORS are set, otherwise it disappears
+ *      without a trace.
  */
 
 void
-spMultTransposed(
-    spMatrix eMatrix,
-    spREAL RHS[],
-    spREAL Solution[]
-#if spCOMPLEX AND spSEPARATED_COMPLEX_VECTORS
-    , spREAL iRHS[]
-    , spREAL iSolution[]
-#endif
-)
+spMultTransposed( eMatrix, RHS, Solution IMAG_VECTORS )
+
+spMatrix eMatrix;
+RealVector RHS, Solution IMAG_VECTORS;
 {
 register  ElementPtr  pElement;
 register  RealVector  Vector;
@@ -889,15 +899,10 @@ extern void ComplexTransposedMatrixMultiply();
  */
 
 static void
-ComplexTransposedMatrixMultiply(
-    MatrixPtr  Matrix,
-    RealVector RHS,
-    RealVector Solution
-#if spSEPARATED_COMPLEX_VECTORS
-    , RealVector iRHS
-    , RealVector iSolution
-#endif
-)
+ComplexTransposedMatrixMultiply( Matrix, RHS, Solution IMAG_VECTORS )
+
+MatrixPtr  Matrix;
+RealVector RHS, Solution IMAG_VECTORS;
 {
 register  ElementPtr  pElement;
 register  ComplexVector  Vector;
@@ -960,7 +965,9 @@ register  int  I, *pExtOrder;
 
 
 #if DETERMINANT
-/*!
+/*
+ *  CALCULATE DETERMINANT
+ *
  *  This routine in capable of calculating the determinant of the
  *  matrix once the LU factorization has been performed.  Hence, only
  *  use this routine after spFactor() and before spClear().
@@ -974,21 +981,22 @@ register  int  I, *pExtOrder;
  *  point number.  For this reason the determinant is scaled to a
  *  reasonable value and the logarithm of the scale factor is returned.
  *
- *  \param eMatrix
+ *  >>> Arguments:
+ *  eMatrix  <input>  (char *)
  *      A pointer to the matrix for which the determinant is desired.
- *  \param pExponent
+ *  pExponent  <output>  (int *)
  *      The logarithm base 10 of the scale factor for the determinant.  To find
  *      the actual determinant, Exponent should be added to the exponent of
  *      Determinant.
- *  \param pDeterminant
+ *  pDeterminant  <output>  (RealNumber *)
  *      The real portion of the determinant.   This number is scaled to be
  *      greater than or equal to 1.0 and less than 10.0.
- *  \param piDeterminant
+ *  piDeterminant  <output>  (RealNumber *)
  *      The imaginary portion of the determinant.  When the matrix is real
  *      this pointer need not be supplied, nothing will be returned.   This
  *      number is scaled to be greater than or equal to 1.0 and less than 10.0.
- */
-/*  >>> Local variables:
+ *
+ *  >>> Local variables:
  *  Norm  (RealNumber)
  *      L-infinity norm of a complex number.
  *  Size  (int)
@@ -997,15 +1005,18 @@ register  int  I, *pExtOrder;
  *      Temporary storage for real portion of determinant.
  */
 
-void
-spDeterminant(
-    spMatrix eMatrix,
-    int *pExponent,
-    spREAL *pDeterminant
 #if spCOMPLEX
-    , spREAL *piDeterminant
+void
+spDeterminant( eMatrix, pExponent, pDeterminant, piDeterminant )
+RealNumber *piDeterminant;
+#else
+void
+spDeterminant( eMatrix, pExponent, pDeterminant )
 #endif
-)
+
+spMatrix eMatrix;
+register  RealNumber *pDeterminant;
+int  *pExponent;
 {
 register MatrixPtr  Matrix = (MatrixPtr)eMatrix;
 register int I, Size;
@@ -1131,13 +1142,16 @@ ComplexNumber Pivot, cDeterminant;
 
 #if STRIP
 
-/*!
+/*
+ *  STRIP FILL-INS FROM MATRIX
+ *
  *  Strips the matrix of all fill-ins.
  *
- *  \param eMatrix
+ *  >>> Arguments:
+ *  Matrix  <input>  (char *)
  *      Pointer to the matrix to be stripped.
- */
-/*  >>> Local variables:
+ *
+ *  >>> Local variables:
  *  pElement  (ElementPtr)
  *      Pointer that is used to step through the matrix.
  *  ppElement  (ElementPtr *)
@@ -1152,7 +1166,9 @@ ComplexNumber Pivot, cDeterminant;
  */
 
 void
-spStripFills( spMatrix eMatrix )
+spStripFills( eMatrix )
+
+spMatrix eMatrix;
 {
 MatrixPtr  Matrix = (MatrixPtr)eMatrix;
 struct FillinListNodeStruct  *pListNode;
@@ -1220,20 +1236,23 @@ struct FillinListNodeStruct  *pListNode;
 
 
 #if TRANSLATE AND DELETE
-/*!
+/*
+ *  DELETE A ROW AND COLUMN FROM THE MATRIX
+ *
  *  Deletes a row and a column from a matrix.
  *
  *  Sparse will abort if an attempt is made to delete a row or column that
  *  doesn't exist.
  *
- *  \param eMatrix
+ *  >>> Arguments:
+ *  eMatrix  <input>  (char *)
  *      Pointer to the matrix in which the row and column are to be deleted.
- *  \param Row
+ *  Row  <input>  (int)
  *      Row to be deleted.
- *  \param Col
+ *  Col  <input>  (int)
  *      Column to be deleted.
- */
-/*  >>> Local variables:
+ *
+ *  >>> Local variables:
  *  ExtCol  (int)
  *      The external column that is being deleted.
  *  ExtRow  (int)
@@ -1252,11 +1271,10 @@ struct FillinListNodeStruct  *pListNode;
  */
 
 void
-spDeleteRowAndCol(
-    spMatrix eMatrix,
-    int  Row,
-    int  Col
-)
+spDeleteRowAndCol( eMatrix, Row, Col )
+
+spMatrix eMatrix;
+int  Row, Col;
 {
 MatrixPtr  Matrix = (MatrixPtr)eMatrix;
 register  ElementPtr  pElement, *ppElement, pLastElement;
@@ -1342,7 +1360,9 @@ int  Size, ExtRow, ExtCol;
 
 
 #if PSEUDOCONDITION
-/*!
+/*
+ *  CALCULATE PSEUDOCONDITION
+ *
  *  Computes the magnitude of the ratio of the largest to the smallest
  *  pivots.  This quantity is an indicator of ill-conditioning in the
  *  matrix.  If this ratio is large, and if the matrix is scaled such
@@ -1355,37 +1375,40 @@ int  Size, ExtRow, ExtCol;
  *  faster to compute than the condition number calculated by
  *  spCondition(), but is not as informative.
  *
- *  \return
+ *  >>> Returns:
  *  The magnitude of the ratio of the largest to smallest pivot used during
  *  previous factorization.  If the matrix was singular, zero is returned.
  *
- *  \param eMatrix
+ *  >>> Arguments:
+ *  eMatrix  <input>  (char *)
  *      Pointer to the matrix.
  */
 
-spREAL
-spPseudoCondition( spMatrix eMatrix )
-{
-    MatrixPtr  Matrix = (MatrixPtr)eMatrix;
-    register int I;
-    register ArrayOfElementPtrs Diag;
-    RealNumber MaxPivot, MinPivot, Mag;
+RealNumber
+spPseudoCondition( eMatrix )
 
-    /* Begin `spPseudoCondition'. */
+spMatrix eMatrix;
+{
+MatrixPtr  Matrix = (MatrixPtr)eMatrix;
+register int I;
+register ArrayOfElementPtrs Diag;
+RealNumber MaxPivot, MinPivot, Mag;
+
+/* Begin `spPseudoCondition'. */
     ASSERT_IS_SPARSE( Matrix );
     ASSERT_NO_ERRORS( Matrix );
     ASSERT_IS_FACTORED( Matrix );
     if (Matrix->Error == spSINGULAR OR Matrix->Error == spZERO_DIAG)
-	return 0.0;
+        return 0.0;
 
     Diag = Matrix->Diag;
     MaxPivot = MinPivot = ELEMENT_MAG( Diag[1] );
     for (I = 2; I <= Matrix->Size; I++)
     {   Mag = ELEMENT_MAG( Diag[I] );
-	if (Mag > MaxPivot)
-	    MaxPivot = Mag;
-	else if (Mag < MinPivot)
-	    MinPivot = Mag;
+        if (Mag > MaxPivot)
+            MaxPivot = Mag;
+        else if (Mag < MinPivot)
+            MinPivot = Mag;
     }
     ASSERT( MaxPivot > 0.0 );
     return MaxPivot / MinPivot;
@@ -1400,7 +1423,9 @@ spPseudoCondition( spMatrix eMatrix )
 
 
 #if CONDITION
-/*!
+/*
+ *  ESTIMATE CONDITION NUMBER
+ *
  *  Computes an estimate of the condition number using a variation on
  *  the LINPACK condition number estimation algorithm.  This quantity is
  *  an indicator of ill-conditioning in the matrix.  To avoid problems
@@ -1417,8 +1442,7 @@ spPseudoCondition( spMatrix eMatrix )
  *  Sparse placing ones on the diagonal of the upper triangular matrix
  *  rather than the lower.  This difference should be of no importance.
  *
- *  \b References:
- *
+ *  References:
  *  A.K. Cline, C.B. Moler, G.W. Stewart, J.H. Wilkinson.  An estimate
  *  for the condition number of a matrix.  SIAM Journal on Numerical
  *  Analysis.  Vol. 16, No. 2, pages 368-375, April 1979.
@@ -1434,26 +1458,30 @@ spPseudoCondition( spMatrix eMatrix )
  *  Journal on Scientific and Statistical Computing.  Vol. 1, No. 2,
  *  pages 205-209, June 1980.
  *
- *  \return
+ *  >>> Returns:
  *  The reciprocal of the condition number.  If the matrix was singular,
  *  zero is returned.
  *
- *  \param eMatrix
+ *  >>> Arguments:
+ *  eMatrix  <input>  (char *)
  *      Pointer to the matrix.
- *  \param NormOfMatrix
+ *  NormOfMatrix  <input>  (RealNumber)
  *      The L-infinity norm of the unfactored matrix as computed by
  *      spNorm().
- *  \param pError
- *      Used to return error code.  Possible errors include \a spSINGULAR
- *      or \a spNO_MEMORY.
+ *  pError  <output>  (int *)
+ *      Used to return error code.
+ *
+ *  >>> Possible errors:
+ *  spSINGULAR
+ *  spNO_MEMORY
  */
 
-spREAL
-spCondition( 
-    spMatrix eMatrix,
-    spREAL NormOfMatrix,
-    int *pError
-)
+RealNumber
+spCondition( eMatrix, NormOfMatrix, pError )
+
+spMatrix eMatrix;
+RealNumber NormOfMatrix;
+int *pError;
 {
 MatrixPtr  Matrix = (MatrixPtr)eMatrix;
 register ElementPtr pElement;
@@ -1661,11 +1689,11 @@ RealNumber Linpack, OLeary, InvNormOfInverse, ComplexCondition();
  */
 
 static RealNumber
-ComplexCondition(
-    MatrixPtr Matrix,
-    RealNumber NormOfMatrix,
-    int *pError
-)
+ComplexCondition( Matrix, NormOfMatrix, pError )
+
+MatrixPtr Matrix;
+RealNumber NormOfMatrix;
+int *pError;
 {
 register ElementPtr pElement;
 register ComplexVector T, Tm;
@@ -1838,19 +1866,26 @@ ComplexNumber Wp, Wm;
 
 
 
-/*!
+/*
+ *  L-INFINITY MATRIX NORM 
+ *
  *  Computes the L-infinity norm of an unfactored matrix.  It is a fatal
  *  error to pass this routine a factored matrix.
  *
- *  \return
+ *  One difficulty is that the rows may not be linked.
+ *
+ *  >>> Returns:
  *  The largest absolute row sum of matrix.
  *
- *  \param eMatrix
+ *  >>> Arguments:
+ *  eMatrix  <input>  (char *)
  *      Pointer to the matrix.
  */
 
-spREAL
-spNorm( spMatrix eMatrix )
+RealNumber
+spNorm( eMatrix )
+
+spMatrix eMatrix;
 {
 MatrixPtr  Matrix = (MatrixPtr)eMatrix;
 register ElementPtr pElement;
@@ -1900,29 +1935,27 @@ RealNumber Max = 0.0, AbsRowSum;
 
 
 #if STABILITY
-/*!
- *  This routine, along with spRoundoff(), are used to gauge the stability of a
+/*
+ *  STABILITY OF FACTORIZATION
+ *
+ *  The following routines are used to gauge the stability of a
  *  factorization.  If the factorization is determined to be too unstable,
  *  then the matrix should be reordered.  The routines compute quantities
  *  that are needed in the computation of a bound on the error attributed
  *  to any one element in the matrix during the factorization.  In other
- *  words, there is a matrix \f$ E = [e_{ij}] \f$ of error terms such that
- *  \f$ A+E = LU \f$.  This routine finds a bound on \f$ |e_{ij}| \f$.
- *  Erisman & Reid [1] showed that \f$ |e_{ij}| < 3.01 u \rho m_{ij} \f$,
- *  where \f$ u \f$ is the machine rounding unit,
- *  \f$ \rho = \max a_{ij} \f$ where the max is taken over every row \f$ i \f$,
- *  column \f$ j \f$, and step \f$ k \f$, and \f$ m_{ij} \f$ is the number
- *  of multiplications required in the computation of \f$ l_{ij} \f$ if
- *  \f$ i > j \f$ or \f$ u_{ij} \f$ otherwise.  Barlow [2] showed that
- *  \f$ \rho < \max_i || l_i ||_p \max_j || u_j ||_q \f$ where
- *  \f$ 1/p + 1/q = 1 \f$.
+ *  words, there is a matrix E = [e_ij] of error terms such that A+E = LU.
+ *  This routine finds a bound on |e_ij|.  Erisman & Reid [1] showed that
+ *  |e_ij| < 3.01 u rho m_ij, where u is the machine rounding unit,
+ *  rho = max a_ij where the max is taken over every row i, column j, and
+ *  step k, and m_ij is the number of multiplications required in the
+ *  computation of l_ij if i > j or u_ij otherwise.  Barlow [2] showed that
+ *  rho < max_i || l_i ||_p max_j || u_j ||_q where 1/p + 1/q = 1.
  *
- *  spLargestElement() finds the magnitude on the largest element in the
+ *  The first routine finds the magnitude on the largest element in the
  *  matrix.  If the matrix has not yet been factored, the largest
  *  element is found by direct search.  If the matrix is factored, a
  *  bound on the largest element in any of the reduced submatrices is
- *  computed using Barlow with \f$ p = \infty \f$ and \f$ q = 1 \f$.
- *  The ratio of these
+ *  computed using Barlow with p = oo and q = 1.  The ratio of these
  *  two numbers is the growth, which can be used to determine if the
  *  pivoting order is adequate.  A large growth implies that
  *  considerable error has been made in the factorization and that it
@@ -1932,15 +1965,14 @@ RealNumber Max = 0.0, AbsRowSum;
  *  encountered after using spOrderAndFactor(), refactor using
  *  spOrderAndFactor() with the pivot threshold increased, say to 0.1.
  *
- *  Using only the size of the matrix as an upper bound on \f$ m_{ij} \f$ and
+ *  Using only the size of the matrix as an upper bound on m_ij and
  *  Barlow's bound, the user can estimate the size of the matrix error
- *  terms \f$ e_{ij} \f$ using the bound of Erisman and Reid.  spRoundoff() 
+ *  terms e_ij using the bound of Erisman and Reid.  The second routine
  *  computes a tighter bound (with more work) based on work by Gear
- *  [3], \f$ |e_{ij}| < 1.01 u \rho (t c^3 + (1 + t)c^2) \f$ where
- *  \f$ t \f$ is the threshold and \f$ c \f$ is the maximum number of
- *  off-diagonal elements in any row of \f$ L \f$.  The expensive part
- *  of computing this bound is determining the maximum number of
- *  off-diagonals in \f$ L \f$, which changes
+ *  [3], |e_ij| < 1.01 u rho (t c^3 + (1 + t)c^2) where t is the
+ *  threshold and c is the maximum number of off-diagonal elements in
+ *  any row of L.  The expensive part of computing this bound is
+ *  determining the maximum number of off-diagonals in L, which changes
  *  only when the order of the matrix changes.  This number is computed
  *  and saved, and only recomputed if the matrix is reordered.
  *
@@ -1954,18 +1986,25 @@ RealNumber Max = 0.0, AbsRowSum;
  *
  *  [3] I. S. Duff, A. M. Erisman, J. K. Reid.  "Direct Methods for Sparse
  *      Matrices."  Oxford 1986. pp 99.
+ */
+
+/*
+ *  LARGEST ELEMENT IN MATRIX
  *
- *  \return
+ *  >>> Returns:
  *  If matrix is not factored, returns the magnitude of the largest element in
  *  the matrix.  If the matrix is factored, a bound on the magnitude of the
  *  largest element in any of the reduced submatrices is returned.
  *
- *  \param eMatrix
+ *  >>> Arguments:
+ *  eMatrix  <input>  (char *)
  *      Pointer to the matrix.
  */
 
-spREAL
-spLargestElement( spMatrix eMatrix )
+RealNumber
+spLargestElement( eMatrix )
+
+spMatrix eMatrix;
 {
 MatrixPtr  Matrix = (MatrixPtr)eMatrix;
 register int I;
@@ -2065,29 +2104,27 @@ register ElementPtr pElement, pDiag;
 
 
 
-/*!
- *  This routine, along with spLargestElement(), are used to gauge the
- *  stability of a factorization. See description of spLargestElement()
- *  for more information.
+/*
+ *  MATRIX ROUNDOFF ERROR
  *
- *  \return
- *  Returns a bound on the magnitude of the largest element in
- *  \f$ E = A - LU \f$.
+ *  >>> Returns:
+ *  Returns a bound on the magnitude of the largest element in E = A - LU.
  *
- *  \param eMatrix
+ *  >>> Arguments:
+ *  eMatrix  <input>  (char *)
  *      Pointer to the matrix.
- *  \param Rho
+ *  Rho  <input>  (RealNumber)
  *      The bound on the magnitude of the largest element in any of the
  *      reduced submatrices.  This is the number computed by the function
  *      spLargestElement() when given a factored matrix.  If this number is
  *      negative, the bound will be computed automatically.
  */
 
-spREAL
-spRoundoff( 
-    spMatrix eMatrix,
-    spREAL Rho
-)
+RealNumber
+spRoundoff( eMatrix, Rho )
+
+spMatrix eMatrix;
+RealNumber Rho;
 {
 MatrixPtr  Matrix = (MatrixPtr)eMatrix;
 register ElementPtr pElement;
@@ -2135,26 +2172,29 @@ RealNumber Reid, Gear;
 
 
 #if DOCUMENTATION
-/*!
+/*
+ *  SPARSE ERROR MESSAGE
+ *
  *  This routine prints a short message describing the error error state
  *  of sparse.  No message is produced if there is no error.
  *  The error state is cleared.
  *
- *  \param eMatrix
+ *  >>> Arguments:
+ *  eMatrix  <input>  (char *)
  *	Matrix for which the error message is to be printed.
- *  \param Stream
+ *  Stream  <input>  (FILE *)
  *	Stream to which the error message is to be printed.
- *  \param Originator
+ *  Originator  <input>  (char *)
  *	Name of originator of error message.  If NULL, `sparse' is used.
  *	If zero-length string, no originator is printed.
  */
 
 void
-spErrorMessage(
-    spMatrix eMatrix,
-    FILE *Stream,
-    char *Originator
-)
+spErrorMessage( eMatrix, Stream, Originator )
+
+spMatrix eMatrix;
+FILE *Stream;
+char *Originator;
 {
 int Row, Col, Error;
 
@@ -2171,9 +2211,9 @@ int Row, Col, Error;
     if (Stream == NULL) Stream = stderr;
     if (Originator[0] != '\0') fprintf( Stream, "%s: ", Originator );
     if (Error >= spFATAL)
-	fprintf( Stream, "fatal error: ");
+	fprintf( Stream, "fatal error, ");
     else
-	fprintf( Stream, "warning: ");
+	fprintf( Stream, "warning, ");
 /*
  * Print particular error message.
  * Do not use switch statement because error codes may not be unique.

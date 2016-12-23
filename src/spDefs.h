@@ -13,10 +13,20 @@
 /*
  *  Revision and copyright information.
  *
- *  Copyright (c) 1985-2003 by Kenneth S. Kundert
+ *  Copyright (c) 1985-1993
+ *  by Kenneth S. Kundert and the University of California.
  *
- *  $Date: 2003/06/29 04:19:52 $
- *  $Revision: 1.2 $
+ *  Permission to use, copy, modify, and distribute this software and
+ *  its documentation for any purpose and without fee is hereby granted,
+ *  provided that the copyright notices appear in all copies and
+ *  supporting documentation and that the authors and the University of
+ *  California are properly credited.  The authors and the University of
+ *  California make no representations as to the suitability of this
+ *  software for any purpose.  It is provided `as is', without express
+ *  or implied warranty.
+ *
+ *  $Date: 2003/06/05 07:06:46 $
+ *  $Revision: 1.1.1.1 $
  */
 
 
@@ -46,6 +56,7 @@
 #undef  PSEUDOCONDITION
 #undef  FORTRAN
 #undef  DEBUG
+#undef  spCOMPATIBILITY
 
 #define  REAL                           YES
 #define  spCOMPLEX                      YES
@@ -65,6 +76,7 @@
 #define  PSEUDOCONDITION                YES
 #define  FORTRAN                        YES
 #define  DEBUG                          YES
+#define  spCOMPATIBILITY                YES
 
 #define  LINT                           YES
 #else /* not lint */
@@ -434,13 +446,9 @@
 #if spCOMPLEX AND spSEPARATED_COMPLEX_VECTORS
 #define IMAG_VECTORS    , iRHS, iSolution
 #define IMAG_RHS        , iRHS
-#define IMAG_RHS_DECL   , RealVector iRHS
-#define IMAG_VECT_DECL  , RealVector iRHS, RealVector iSolution
 #else
 #define IMAG_VECTORS
 #define IMAG_RHS
-#define IMAG_RHS_DECL
-#define IMAG_VECT_DECL
 #endif
 
 
@@ -452,11 +460,14 @@
  * MEMORY ALLOCATION
  */
 
-spcEXTERN void *malloc(size_t size);
-spcEXTERN void *calloc(size_t nmemb, size_t size);
-spcEXTERN void *realloc(void *ptr, size_t size);
-spcEXTERN void free(void *ptr);
-spcEXTERN void abort(void);
+spcEXTERN char *malloc(), *calloc(), *realloc();
+#ifdef ultrix
+    spcEXTERN void free();
+    spcEXTERN void abort();
+#else
+    spcEXTERN free();
+    spcEXTERN abort();
+#endif
 
 #define ALLOC(type,number)  ((type *)malloc((unsigned)(sizeof(type)*(number))))
 #define REALLOC(ptr,type,number)  \
@@ -621,7 +632,7 @@ typedef  ElementPtr  *ArrayOfElementPtrs;
  *  linked list so that it can grow without a priori bounds.
  *
  *  >>> Structure fields:
- *  AllocatedPtr  (void *)
+ *  AllocatedPtr  (char *)
  *      Pointer to chunk of memory that has been allocated for the matrix.
  *  NextRecord  (struct  AllocationRecord *)
  *      Pointer to the next allocation record.
@@ -629,7 +640,7 @@ typedef  ElementPtr  *ArrayOfElementPtrs;
 
 /* Begin `AllocationRecord'. */
 struct AllocationRecord
-{   void  *AllocatedPtr;
+{   char  *AllocatedPtr;
     struct  AllocationRecord  *NextRecord;
 };
 
@@ -928,15 +939,15 @@ typedef  struct MatrixFrame  *MatrixPtr;
  *  Declarations
  */
 
-spcEXTERN ElementPtr spcGetElement( MatrixPtr );
-spcEXTERN ElementPtr spcGetFillin( MatrixPtr );
-spcEXTERN ElementPtr spcFindDiag( MatrixPtr, int );
-spcEXTERN ElementPtr spcCreateElement( MatrixPtr, int, int,
-				ElementPtr*, ElementPtr*, int );
-spcEXTERN void spcCreateInternalVectors( MatrixPtr );
-spcEXTERN void spcLinkRows( MatrixPtr );
-spcEXTERN void spcColExchange( MatrixPtr, int, int );
-spcEXTERN void spcRowExchange( MatrixPtr, int, int );
+spcEXTERN ElementPtr spcGetElement spcARGS(( MatrixPtr ));
+spcEXTERN ElementPtr spcGetFillin spcARGS(( MatrixPtr ));
+spcEXTERN ElementPtr spcFindDiag spcARGS(( MatrixPtr, int ));
+spcEXTERN ElementPtr spcCreateElement spcARGS(( MatrixPtr, int, int,
+				ElementPtr*, ElementPtr*, int ));
+spcEXTERN void spcCreateInternalVectors spcARGS(( MatrixPtr ));
+spcEXTERN void spcLinkRows spcARGS(( MatrixPtr ));
+spcEXTERN void spcColExchange spcARGS(( MatrixPtr, int, int ));
+spcEXTERN void spcRowExchange spcARGS(( MatrixPtr, int, int ));
 
 spcEXTERN char spcMatrixIsNotValid[];
 spcEXTERN char spcErrorsMustBeCleared[];

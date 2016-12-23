@@ -5,13 +5,10 @@
  *     Kenneth S. Kundert           Alberto Sangiovanni-Vincentelli
  *     UC Berkeley
  *
- *  This module contains routines that make Sparse1.4 a direct
+ *  This module contains routines that make Sparse1.3 a direct
  *  replacement for the SMP sparse matrix package in Spice3c1 and Spice3d1.
- *  Sparse1.4 is in general a faster and more robust package than SMP.
+ *  Sparse1.3 is in general a faster and more robust package than SMP.
  *  These advantages become significant on large circuits.
- *
- *  This module is provided for convience only. It has not been tested
- *  with the recent version of Spice3 and is not supported.
  *
  *  >>> User accessible functions contained in this file:
  *  SMPaddElt
@@ -69,6 +66,7 @@
  *      DEBUG                           YES
  *      spCOMPLEX                       1
  *      spSEPARATED_COMPLEX_VECTORS     1
+ *      spCOMPATIBILITY                 0
  *
  *      spREAL  double
  */
@@ -76,14 +74,23 @@
 /*
  *  Revision and copyright information.
  *
- *  Copyright (c) 1985-2003 by Kenneth S. Kundert
+ *  Copyright (c) 1985-1993
+ *  by Kenneth S. Kundert and the University of California.
+ *
+ *  Permission to use, copy, modify, and distribute this software and its
+ *  documentation for any purpose and without fee is hereby granted, provided
+ *  that the above copyright notice appear in all copies and supporting
+ *  documentation and that the authors and the University of California
+ *  are properly credited.  The authors and the University of California
+ *  make no representations as to the suitability of this software for
+ *  any purpose.  It is provided `as is', without express or implied warranty.
  */
 
 #ifndef lint
 static char copyright[] =
-    "Sparse1.4: Copyright (c) 1985-2003 by Kenneth S. Kundert";
+    "Sparse1.3: Copyright (c) 1985-1993 by Kenneth S. Kundert";
 static char RCSid[] =
-    "@(#)$Header: /cvsroot/sparse/src/spSMP.c,v 1.3 2003/06/30 19:40:51 kundert Exp $";
+    "@(#)$Header: /cvsroot/sparse/src/spSMP.c,v 1.1.1.1 2003/06/05 07:06:31 kundert Exp $";
 #endif
 
 

@@ -25,14 +25,24 @@
 /*
  *  Revision and copyright information.
  *
- *  Copyright (c) 1985-2003 by Kenneth S. Kundert
+ *  Copyright (c) 1985-1993
+ *  by Kenneth S. Kundert and the University of California.
+ *
+ *  Permission to use, copy, modify, and distribute this software and
+ *  its documentation for any purpose and without fee is hereby granted,
+ *  provided that the copyright notices appear in all copies and
+ *  supporting documentation and that the authors and the University of
+ *  California are properly credited.  The authors and the University of
+ *  California make no representations as to the suitability of this
+ *  software for any purpose.  It is provided `as is', without express
+ *  or implied warranty.
  */
 
 #ifndef lint
 static char copyright[] =
-    "Sparse1.4: Copyright (c) 1985-2003 by Kenneth S. Kundert";
+    "Sparse1.3: Copyright (c) 1985-1993 by Kenneth S. Kundert";
 static char RCSid[] =
-    "@(#)$Header: /cvsroot/sparse/src/spTest.c,v 1.5 2003/06/30 19:40:51 kundert Exp $";
+    "@(#)$Header: /cvsroot/sparse/src/spTest.c,v 1.1.1.1 2003/06/05 07:06:53 kundert Exp $";
 #endif
 
 
@@ -328,8 +338,10 @@ static void EnlargeVectors();
  */
 
 
-int
-main( int ArgCount, char **Args )
+main(ArgCount, Args)
+
+int ArgCount;
+char *Args[];
 {
 register  long I;
 int  Error, Last, Elements, Fillins;
@@ -359,9 +371,6 @@ extern char *sbrk();
       "    Enable EXPANDABLE, INITIALIZE, and ARRAY_OFFSET in `spConfig.h'.\n");
         exit(1);
 #   endif
-
-/* Print copyright notice. */
-    printf("Sparse1.4\nCopyright (c) 2003, Kenneth S. Kundert.\nAll rights reserved.\n\n");
 
     do
     {
@@ -1028,7 +1037,11 @@ static char *Syntax = "%s: syntax error in file `%s' at line %d.\n";
 /*ARGSUSED*/
 
 static int
-Init( RealNumber *pElement, char *pInitInfo, int Row, int Col )
+Init( pElement, pInitInfo, Row, Col)
+
+RealNumber *pElement;
+char *pInitInfo;
+int Row, Col;
 {
 /* Begin `Init'. */
     *pElement = *(RealNumber *)pInitInfo;
@@ -1057,7 +1070,9 @@ static struct Bin {
 
 
 static ComplexVector
-CheckOutComplexArray( int Count )
+CheckOutComplexArray( Count )
+
+int Count;
 {
 struct Bin Bin, *pBin;
 ComplexVector Temp;
@@ -1110,7 +1125,10 @@ CheckInAllComplexArrays()
  */
 
 static int
-InterpretCommandLine( int ArgCount, char *Args[] )
+InterpretCommandLine( ArgCount, Args )
+
+int ArgCount;
+char *Args[];
 {
 int I, FileCount = 0;
 char *GetProgramName();
@@ -1225,7 +1243,9 @@ char *GetProgramName();
  */
 
 static char *
-GetProgramName( char *Arg0 )
+GetProgramName( Arg0 )
+
+char *Arg0;
 {
 char *pTail;
 /* Begin `GetProgramName'. */
@@ -1252,7 +1272,9 @@ char *pTail;
  */
 
 static void
-Usage( char *sBadOpt )
+Usage( sBadOpt )
+
+char *sBadOpt;
 {
 /* Begin `Usage'. */
 
@@ -1301,7 +1323,9 @@ Usage( char *sBadOpt )
  */
 
 static void
-EnlargeVectors( int NewSize, int Clear )
+EnlargeVectors( NewSize, Clear )
+
+int NewSize, Clear;
 {
 int I, PrevSize = MaxSize;
 RealVector OldRHS = RHS, iOldRHS = iRHS;

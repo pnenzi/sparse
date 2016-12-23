@@ -1,6 +1,9 @@
-/*  EXPORTS for sparse matrix routines. */
-/*!
- *  \file
+/*
+ *  EXPORTS for sparse matrix routines.
+ *
+ *  Author:                     Advising professor:
+ *      Kenneth S. Kundert          Alberto Sangiovanni-Vincentelli
+ *      UC Berkeley
  *
  *  This file contains definitions that are useful to the calling
  *  program.  In particular, this file contains error keyword
@@ -9,22 +12,26 @@
  *  that acts as a template for entering admittances into the matrix.
  *  Also included is the type definitions for the various functions
  *  available to the user.
- *
- *  Objects that begin with the \a spc prefix are considered private
- *  and should not be used.
- *
- *  \author
- *  Kenneth S. Kundert <kundert@users.sourceforge.net>
  */
 
 
 /*
  *  Revision and copyright information.
  *
- *  Copyright (c) 1985-2003 by Kenneth S. Kundert
+ *  Copyright (c) 1985-1993
+ *  by Kenneth S. Kundert and the University of California.
  *
- *  $Date: 2003/06/29 04:19:52 $
- *  $Revision: 1.2 $
+ *  Permission to use, copy, modify, and distribute this software and
+ *  its documentation for any purpose and without fee is hereby granted,
+ *  provided that the copyright notices appear in all copies and
+ *  supporting documentation and that the authors and the University of
+ *  California are properly credited.  The authors and the University of
+ *  California make no representations as to the suitability of this
+ *  software for any purpose.  It is provided `as is', without express
+ *  or implied warranty.
+ *
+ *  $Date: 2003/06/05 07:06:44 $
+ *  $Revision: 1.1.1.1 $
  */
 
 
@@ -54,55 +61,66 @@
  *  changed under the condition that the codes for the nonfatal errors are
  *  less than the code for spFATAL and similarly the codes for the fatal
  *  errors are greater than that for spFATAL.
+ *
+ *  >>> Error descriptions:
+ *  spOKAY
+ *      No error has occurred.
+ *  spSMALL_PIVOT
+ *      When reordering the matrix, no element was found which satisfies the
+ *      absolute threshold criteria.  The largest element in the matrix was
+ *      chosen as pivot.  Non-fatal.
+ *  spZERO_DIAG
+ *      Fatal error.  A zero was encountered on the diagonal the matrix.  This
+ *      does not necessarily imply that the matrix is singular.  When this
+ *      error occurs, the matrix should be reconstructed and factored using
+ *      spOrderAndFactor().  In spCOMPATIBILITY mode, spZERO_DIAG is
+ *      indistinguishable from spSINGULAR.
+ *  spSINGULAR
+ *      Fatal error.  Matrix is singular, so no unique solution exists.
+ *  spMANGLED
+ *	Fatal error.  Matrix is has been mangled, results of requested
+ *	operation are garbage.
+ *  spNO_MEMORY
+ *      Fatal error.  Indicates that not enough memory is available to handle
+ *      the matrix.
+ *  spPANIC
+ *      Fatal error indicating that the routines are not prepared to
+ *      handle the matrix that has been requested.  This may occur when
+ *      the matrix is specified to be real and the routines are not
+ *      compiled for real matrices, or when the matrix is specified to
+ *      be complex and the routines are not compiled to handle complex
+ *      matrices.
+ *  spFATAL
+ *      Not an error flag, but rather the dividing line between fatal errors
+ *      and warnings.
  */
 
 /* Begin error macros. */
-#define  spOKAY		0  /*!<
-			    * Error code that indicates that no error has
-			    * occurred.
-			    */
-#define  spSMALL_PIVOT	1  /*!<
-			    * Non-fatal error code that indicates that, when
-			    * reordering the matrix, no element was found that
-			    * satisfies the absolute threshold criteria. The
-			    * largest element in the matrix was chosen as pivot.
-			    */
-#define  spZERO_DIAG	2  /*!<
-			    * Fatal error code that indicates that, a zero was
-			    * encountered on the diagonal the matrix. This does
-			    * not necessarily imply that the matrix is singular.
-			    * When this error occurs, the matrix should be
-			    * reconstructed and factored using
-			    * spOrderAndFactor().
-			    */
-#define  spSINGULAR	3  /*!<
-			    * Fatal error code that indicates that, matrix is
-			    * singular, so no unique solution exists.
-			    */
-#define  spMANGLED	4  /*!<
-			    * Fatal error code that indicates that, matrix has
-			    * been mangled, results of requested operation are
-			    * garbage.
-			    */
-#define  spNO_MEMORY	5  /*!<
-			    * Fatal error code that indicates that not enough
-			    * memory is available.
-			    */
-#define  spPANIC	6  /*!<
-			    * Fatal error code that indicates that the routines
-			    * are not prepared to handle the matrix that has
-			    * been requested.  This may occur when the matrix
-			    * is specified to be real and the routines are not
-			    * compiled for real matrices, or when the matrix is
-			    * specified to be complex and the routines are not
-			    * compiled to handle complex matrices.
-			    */
-#define  spFATAL	2  /*!<
-			    * Error code that is not an error flag, but rather
-			    * the dividing line between fatal errors and
-			    * warnings.
-			    */
+#define  spOKAY                 0
+#define  spSMALL_PIVOT          1
+#define  spZERO_DIAG            2
+#define  spSINGULAR             3
+#define  spMANGLED		4
+#define  spNO_MEMORY            5
+#define  spPANIC                6
 
+#define  spFATAL                2
+
+
+#if spCOMPATIBILITY
+#define  NO_ERROR               spOKAY
+#define  UNDER_FLOW             spOKAY
+#define  OVER_FLOW              spOKAY
+#define  ILL_CONDITIONED        spSMALL_PIVOT
+#define  SINGULAR               spSINGULAR
+#define  NO_MEMORY              spNO_MEMORY
+#define  RANGE                  spPANIC
+
+#define  FATAL                  spFATAL
+
+#undef   spZERO_DIAG
+#define  spZERO_DIAG            spSINGULAR
+#endif /* spCOMPATIBILITY */
 
 
 
@@ -110,18 +128,25 @@
 
 /*
  *  KEYWORD DEFINITIONS
+ *
+ *  Here we define what precision arithmetic Sparse will use.  Double
+ *  precision is suggested as being most appropriate for circuit
+ *  simulation and for C.  However, it is possible to change spREAL
+ *  to a float for single precision arithmetic.  Note that in C, single
+ *  precision arithmetic is often slower than double precision.  Sparse
+ *  internally refers to spREALs as RealNumbers.
+ *
+ *  Some C compilers, notably the old VMS compiler, do not handle the keyword
+ *  "void" correctly.  If this is true for your compiler, remove the
+ *  comment delimiters from the redefinition of void to int below.
  */
 
-#define  spREAL double  /*!<
-			 * Defines the precision of the arithmetic used by
-			 * \a Sparse will use.  Double precision is suggested
-			 * as being most appropriate for circuit simulation
-			 * and for C.  However, it is possible to change spREAL
-			 * to a float for single precision arithmetic.  Note
-			 * that in C, single precision arithmetic is often
-			 * slower than double precision.  Sparse
-			 * internally refers to spREALs as RealNumbers.
-			 */
+#define  spREAL double
+/* #define  void    int   */
+
+#if spCOMPATIBILITY
+#define SPARSE_REAL     spREAL
+#endif
 
 
 
@@ -148,32 +173,10 @@
 
 /* Begin partition keywords. */
 
-#define spDEFAULT_PARTITION	0 /*!<
-			           * Partition code for spPartition().
-				   * Indicates that the default partitioning
-				   * mode should be used.
-				   * \see spPartition()
-				   */
-#define spDIRECT_PARTITION	1 /*!<
-			           * Partition code for spPartition().
-				   * Indicates that all rows should be placed
-				   * in the direct addressing partition.
-				   * \see spPartition()
-				   */
-#define spINDIRECT_PARTITION	2 /*!<
-			           * Partition code for spPartition().
-				   * Indicates that all rows should be placed
-				   * in the indirect addressing partition.
-				   * \see spPartition()
-				   */
-#define spAUTO_PARTITION	3 /*!<
-			           * Partition code for spPartition().
-				   * Indicates that \a Sparse should chose
-				   * the best partition for each row based
-				   * on some simple rules. This is generally
-				   * preferred.
-				   * \see spPartition()
-				   */
+#define spDEFAULT_PARTITION     0
+#define spDIRECT_PARTITION      1
+#define spINDIRECT_PARTITION    2
+#define spAUTO_PARTITION        3
 
 
 
@@ -181,33 +184,38 @@
 
 /*
  *  MACRO FUNCTION DEFINITIONS
+ *
+ *  >>> Macro descriptions:
+ *  spADD_REAL_ELEMENT
+ *      Macro function that adds data to a real element in the matrix by a
+ *      pointer.
+ *  spADD_IMAG_ELEMENT
+ *      Macro function that adds data to a imaginary element in the matrix by
+ *      a pointer.
+ *  spADD_COMPLEX_ELEMENT
+ *      Macro function that adds data to a complex element in the matrix by a
+ *      pointer.
+ *  spADD_REAL_QUAD
+ *      Macro function that adds data to each of the four real matrix elements
+ *      specified by the given template.
+ *  spADD_IMAG_QUAD
+ *      Macro function that adds data to each of the four imaginary matrix
+ *      elements specified by the given template.
+ *  spADD_COMPLEX_QUAD
+ *      Macro function that adds data to each of the four complex matrix
+ *      elements specified by the given template.
  */
 
 /* Begin Macros. */
-/*!
- * Macro function that adds data to a real element in the matrix by a pointer.
- */
 #define  spADD_REAL_ELEMENT(element,real)       *(element) += real
 
-/*!
- * Macro function that adds data to a imaginary element in the matrix by
- * a pointer.
- */
 #define  spADD_IMAG_ELEMENT(element,imag)       *(element+1) += imag
 
-/*!
- * Macro function that adds data to a complex element in the matrix by
- * a pointer.
- */
 #define  spADD_COMPLEX_ELEMENT(element,real,imag)       \
 {   *(element) += real;                                 \
     *(element+1) += imag;                               \
 }
 
-/*!
- * Macro function that adds data to each of the four real matrix elements
- * specified by the given template.
- */
 #define  spADD_REAL_QUAD(template,real)         \
 {   *((template).Element1) += real;             \
     *((template).Element2) += real;             \
@@ -215,10 +223,6 @@
     *((template).Element4Negated) -= real;      \
 }
 
-/*!
- * Macro function that adds data to each of the four imaginary matrix
- * elements specified by the given template.
- */
 #define  spADD_IMAG_QUAD(template,imag)         \
 {   *((template).Element1+1) += imag;           \
     *((template).Element2+1) += imag;           \
@@ -226,10 +230,6 @@
     *((template).Element4Negated+1) -= imag;    \
 }
 
-/*!
- * Macro function that adds data to each of the four complex matrix
- * elements specified by the given template.
- */
 #define  spADD_COMPLEX_QUAD(template,real,imag) \
 {   *((template).Element1) += real;             \
     *((template).Element2) += real;             \
@@ -241,6 +241,14 @@
     *((template).Element4Negated+1) -= imag;    \
 }
 
+#if spCOMPATIBILITY
+#define  ADD_REAL_ELEMENT_TO_MATRIX             spADD_REAL_ELEMENT
+#define  ADD_IMAG_ELEMENT_TO_MATRIX             spADD_IMAG_ELEMENT
+#define  ADD_COMPLEX_ELEMENT_TO_MATRIX          spADD_COMPLEX_ELEMENT
+#define  ADD_REAL_QUAD_ELEMENT_TO_MATRIX        spADD_REAL_ELEMENT
+#define  ADD_IMAG_QUAD_ELEMENT_TO_MATRIX        spADD_IMAG_ELEMENT
+#define  ADD_COMPLEX_QUAD_ELEMENT_TO_MATRIX     spADD_COMPLEX_ELEMENT
+#endif
 
 
 
@@ -253,31 +261,33 @@
  *   External type definitions for Sparse data objects.
  */
 
-/*! Declares the type of the a pointer to a matrix. */
 typedef spGenericPtr spMatrix;
-
-/*! Declares the type of the a pointer to a matrix element. */
 typedef spREAL spElement;
-
-/*! Declares the type of the Sparse error codes. */
 typedef int spError;
 
 
 
 
 
-/* TYPE DEFINITION FOR COMPONENT TEMPLATE */
-/*!
+/*
+ *   TYPE DEFINITION FOR COMPONENT TEMPLATE
+ *
  *   This data structure is used to hold pointers to four related elements in
- *   matrix.  It is used in conjunction with the routines spGetAdmittance(),
- *   spGetQuad(), and spGetOnes().  These routines stuff the structure which
- *   is later used by the \a spADD_QUAD macro functions above.  It is also
- *   possible for the user to collect four pointers returned by spGetElement()
- *   and stuff them into the template.  The \a spADD_QUAD routines stuff data
- *   into the matrix in locations specified by \a Element1 and \a Element2
- *   without changing the data.  The data is negated before being placed in
- *   \a Element3 and \a Element4.
+ *   matrix.  It is used in conjunction with the routines
+ *       spGetAdmittance
+ *       spGetQuad
+ *       spGetOnes
+ *   These routines stuff the structure which is later used by the spADD_QUAD
+ *   macro functions above.  It is also possible for the user to collect four
+ *   pointers returned by spGetElement and stuff them into the template.
+ *   The spADD_QUAD routines stuff data into the matrix in locations specified
+ *   by Element1 and Element2 without changing the data.  The data is negated
+ *   before being placed in Element3 and Element4.
  */
+
+#if spCOMPATIBILITY
+#define spTemplate TemplateStruct
+#endif
 
 /* Begin `spTemplate'. */
 struct  spTemplate
@@ -299,76 +309,117 @@ struct  spTemplate
 
 /* Begin function declarations. */
 
-spcEXTERN  void       spClear( spMatrix );
-spcEXTERN  spREAL     spCondition( spMatrix, spREAL, int* );
-spcEXTERN  spMatrix   spCreate( int, int, spError* );
-spcEXTERN  void       spDeleteRowAndCol( spMatrix, int, int );
-spcEXTERN  void       spDestroy( spMatrix );
-spcEXTERN  int        spElementCount( spMatrix );
-spcEXTERN  spError    spErrorState( spMatrix );
+spcEXTERN  void       spClear spcARGS(( spMatrix ));
+spcEXTERN  spREAL     spCondition spcARGS(( spMatrix, spREAL, int* ));
+spcEXTERN  spMatrix   spCreate spcARGS(( int, int, spError* ));
+spcEXTERN  void       spDeleteRowAndCol spcARGS(( spMatrix, int, int ));
+spcEXTERN  void       spDestroy spcARGS(( spMatrix ));
+spcEXTERN  int        spElementCount spcARGS(( spMatrix ));
+spcEXTERN  spError    spErrorState spcARGS(( spMatrix ));
 #ifdef EOF
-    spcEXTERN void    spErrorMessage( spMatrix, FILE*, char* );
+    spcEXTERN void    spErrorMessage spcARGS(( spMatrix, FILE*, char* ));
 #else
 #   define spErrorMessage(a,b,c) spcFUNC_NEEDS_FILE(_spErrorMessage,stdio)
 #endif
 
 
-spcEXTERN  spError    spFactor( spMatrix );
-spcEXTERN  int        spFileMatrix( spMatrix, char*, char*, int, int, int );
-spcEXTERN  int        spFileStats( spMatrix, char*, char* );
-spcEXTERN  int        spFillinCount( spMatrix );
-spcEXTERN  spElement *spFindElement( spMatrix, int, int );
-spcEXTERN  spError    spGetAdmittance( spMatrix, int, int,
-				struct spTemplate* );
-spcEXTERN  spElement *spGetElement( spMatrix, int, int );
-spcEXTERN  spGenericPtr spGetInitInfo( spElement* );
-spcEXTERN  spError    spGetOnes( spMatrix, int, int, int,
-				struct spTemplate* );
-spcEXTERN  spError    spGetQuad( spMatrix, int, int, int, int,
-				struct spTemplate* );
-spcEXTERN  int        spGetSize( spMatrix, int );
-spcEXTERN  int        spInitialize( spMatrix, int (*pInit)(spElement *, spGenericPtr, int, int) );
-spcEXTERN  void       spInstallInitInfo( spElement*, spGenericPtr );
-spcEXTERN  spREAL     spLargestElement( spMatrix );
-spcEXTERN  void       spMNA_Preorder( spMatrix );
-spcEXTERN  spREAL     spNorm( spMatrix );
-spcEXTERN  spError    spOrderAndFactor( spMatrix, spREAL[], spREAL,
-				spREAL, int );
-spcEXTERN  void       spPartition( spMatrix, int );
-spcEXTERN  void       spPrint( spMatrix, int, int, int );
-spcEXTERN  spREAL     spPseudoCondition( spMatrix );
-spcEXTERN  spREAL     spRoundoff( spMatrix, spREAL );
-spcEXTERN  void       spScale( spMatrix, spREAL[], spREAL[] );
-spcEXTERN  void       spSetComplex( spMatrix );
-spcEXTERN  void       spSetReal( spMatrix );
-spcEXTERN  void       spStripFills( spMatrix );
-spcEXTERN  void       spWhereSingular( spMatrix, int*, int* );
+spcEXTERN  spError    spFactor spcARGS(( spMatrix ));
+spcEXTERN  int        spFileMatrix spcARGS(( spMatrix, char*, char*, int, int,
+				int ));
+spcEXTERN  int        spFileStats spcARGS(( spMatrix, char*, char* ));
+spcEXTERN  int        spFillinCount spcARGS(( spMatrix ));
+spcEXTERN  spElement *spFindElement spcARGS(( spMatrix, int, int ));
+spcEXTERN  spError    spGetAdmittance spcARGS(( spMatrix, int, int,
+				struct spTemplate* ));
+spcEXTERN  spElement *spGetElement spcARGS(( spMatrix, int, int ));
+spcEXTERN  spGenericPtr spGetInitInfo spcARGS(( spElement* ));
+spcEXTERN  spError    spGetOnes spcARGS(( spMatrix, int, int, int,
+				struct spTemplate* ));
+spcEXTERN  spError    spGetQuad spcARGS(( spMatrix, int, int, int, int,
+				struct spTemplate* ));
+spcEXTERN  int        spGetSize spcARGS(( spMatrix, int ));
+spcEXTERN  int        spInitialize spcARGS(( spMatrix, int (*)() ));
+spcEXTERN  void       spInstallInitInfo spcARGS(( spElement*, spGenericPtr ));
+spcEXTERN  spREAL     spLargestElement spcARGS(( spMatrix ));
+spcEXTERN  void       spMNA_Preorder spcARGS(( spMatrix ));
+spcEXTERN  spREAL     spNorm spcARGS(( spMatrix ));
+spcEXTERN  spError    spOrderAndFactor spcARGS(( spMatrix, spREAL[], spREAL,
+				spREAL, int ));
+spcEXTERN  void       spPartition spcARGS(( spMatrix, int ));
+spcEXTERN  void       spPrint spcARGS(( spMatrix, int, int, int ));
+spcEXTERN  spREAL     spPseudoCondition spcARGS(( spMatrix ));
+spcEXTERN  spREAL     spRoundoff spcARGS(( spMatrix, spREAL ));
+spcEXTERN  void       spScale spcARGS(( spMatrix, spREAL[], spREAL[] ));
+spcEXTERN  void       spSetComplex spcARGS(( spMatrix ));
+spcEXTERN  void       spSetReal spcARGS(( spMatrix ));
+spcEXTERN  void       spStripFills spcARGS(( spMatrix ));
+spcEXTERN  void       spWhereSingular spcARGS(( spMatrix, int*, int* ));
 
 /* Functions with argument lists that are dependent on options. */
 
 #if spCOMPLEX
-spcEXTERN  void       spDeterminant( spMatrix, int*, spREAL*, spREAL* );
+spcEXTERN  void       spDeterminant  spcARGS(( spMatrix, int*,
+				spREAL*, spREAL* ));
 #else /* NOT spCOMPLEX */
-spcEXTERN  void       spDeterminant( spMatrix, int*, spREAL* );
+spcEXTERN  void       spDeterminant  spcARGS(( spMatrix, int*, spREAL* ));
 #endif /* NOT spCOMPLEX */
 #if spCOMPLEX && spSEPARATED_COMPLEX_VECTORS
-spcEXTERN  int        spFileVector( spMatrix, char* ,
-				spREAL[], spREAL[]);
-spcEXTERN  void       spMultiply( spMatrix, spREAL[], spREAL[],
-				spREAL[], spREAL[] );
-spcEXTERN  void       spMultTransposed( spMatrix, spREAL[], spREAL[],
-				spREAL[], spREAL[] );
-spcEXTERN  void       spSolve( spMatrix, spREAL[], spREAL[], spREAL[],
-				spREAL[] );
-spcEXTERN  void       spSolveTransposed( spMatrix, spREAL[], spREAL[],
-				spREAL[], spREAL[] );
+spcEXTERN  int        spFileVector spcARGS(( spMatrix, char* ,
+				spREAL[], spREAL[]));
+spcEXTERN  void       spMultiply spcARGS(( spMatrix, spREAL[], spREAL[],
+				spREAL[], spREAL[] ));
+spcEXTERN  void       spMultTransposed spcARGS(( spMatrix, spREAL[], spREAL[],
+				spREAL[], spREAL[] ));
+spcEXTERN  void       spSolve spcARGS(( spMatrix, spREAL[], spREAL[], spREAL[],
+				spREAL[] ));
+spcEXTERN  void       spSolveTransposed spcARGS(( spMatrix, spREAL[], spREAL[],
+				spREAL[], spREAL[] ));
 #else /* NOT  (spCOMPLEX && spSEPARATED_COMPLEX_VECTORS) */
-spcEXTERN  int        spFileVector( spMatrix, char* , spREAL[] );
-spcEXTERN  void       spMultiply( spMatrix, spREAL[], spREAL[] );
-spcEXTERN  void       spMultTransposed( spMatrix,
-				spREAL[], spREAL[] );
-spcEXTERN  void       spSolve( spMatrix, spREAL[], spREAL[] );
-spcEXTERN  void       spSolveTransposed( spMatrix,
-				spREAL[], spREAL[] );
+spcEXTERN  int        spFileVector spcARGS(( spMatrix, char* , spREAL[] ));
+spcEXTERN  void       spMultiply spcARGS(( spMatrix, spREAL[], spREAL[] ));
+spcEXTERN  void       spMultTransposed spcARGS(( spMatrix,
+				spREAL[], spREAL[] ));
+spcEXTERN  void       spSolve spcARGS(( spMatrix, spREAL[], spREAL[] ));
+spcEXTERN  void       spSolveTransposed spcARGS(( spMatrix,
+				spREAL[], spREAL[] ));
 #endif /* NOT  (spCOMPLEX && spSEPARATED_COMPLEX_VECTORS) */
+
+#if spCOMPATIBILITY
+spcEXTERN  char    *AllocateMatrix();
+spcEXTERN  spREAL  *AddElementToMatrix();
+spcEXTERN  void     AddRealElementToMatrix();
+spcEXTERN  void     AddImagElementToMatrix();
+spcEXTERN  void     AddComplexElementToMatrix();
+spcEXTERN  void     AddAdmittanceToMatrix();
+spcEXTERN  void     AddOnesToMatrix();
+spcEXTERN  void     AddQuadToMatrix();
+spcEXTERN  void     AddRealQuadElementToMatrix();
+spcEXTERN  void     AddImagQuadElementToMatrix();
+spcEXTERN  void     AddComplexQuadElementToMatrix();
+spcEXTERN  void     CleanMatrix();
+spcEXTERN  void     ClearMatrix();
+spcEXTERN  int      ClearMatrixError();
+spcEXTERN  void     DeallocateMatrix();
+spcEXTERN  void     DeleteRowAndColFromMatrix();
+spcEXTERN  void     Determinant();
+spcEXTERN  int      DecomposeMatrix();
+spcEXTERN  int      GetMatrixSize();
+spcEXTERN  int      MatrixElementCount();
+spcEXTERN  int      MatrixFillinCount();
+spcEXTERN  void     MatrixMultiply();
+spcEXTERN  spREAL   MatrixRoundoffError();
+spcEXTERN  int      MatrixError();
+spcEXTERN  int      OrderAndDecomposeMatrix();
+spcEXTERN  void     OutputMatrixToFile();
+spcEXTERN  void     OutputStatisticsToFile();
+spcEXTERN  void     OutputVectorToFile();
+spcEXTERN  void     PreorderForModifiedNodal();
+spcEXTERN  void     PrintMatrix();
+spcEXTERN  void     SetMatrixComplex();
+spcEXTERN  void     SetMatrixReal();
+spcEXTERN  void     SolveMatrix();
+spcEXTERN  void     SolveTransposedMatrix();
+spcEXTERN  void     ScaleMatrix();
+#endif /* spCOMPATIBILITY */
+
 #endif  /* spOKAY */

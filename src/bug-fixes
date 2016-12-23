@@ -1,0 +1,40 @@
+===============================================================================
+spFactor.c:1274
+                while ((ChosenPivot != NULL) AND (ChosenPivot->Col < Step))
+                    ChosenPivot = ChosenPivot->NextInRow;
+                PivotMag = ELEMENT_MAG(ChosenPivot);
+changes to ....................................................................
+                while ((ChosenPivot != NULL) AND (ChosenPivot->Col < Step))
+                    ChosenPivot = ChosenPivot->NextInRow;
+		if (ChosenPivot == NULL)
+		{   /* Reduced row has no elements, matrix is singular. */
+		    break;
+		}
+                PivotMag = ELEMENT_MAG(ChosenPivot);
+===============================================================================
+spFactor.c:1259
+			while((ChosenPivot != NULL) AND (ChosenPivot->Col<Step))
+			    ChosenPivot = ChosenPivot->NextInRow;
+			PivotMag = ELEMENT_MAG(ChosenPivot);
+changes to ....................................................................
+			while((ChosenPivot != NULL) AND (ChosenPivot->Col<Step))
+			    ChosenPivot = ChosenPivot->NextInRow;
+			if (ChosenPivot == NULL)
+			{/* Reduced row has no elements, matrix is singular. */
+			    break;
+			}
+			PivotMag = ELEMENT_MAG(ChosenPivot);
+===============================================================================
+spFactor.c:1247
+                while ((ChosenPivot != NULL) AND (ChosenPivot->Row < Step))
+                    ChosenPivot = ChosenPivot->NextInCol;
+                PivotMag = ELEMENT_MAG(ChosenPivot);
+changes to ....................................................................
+                while ((ChosenPivot != NULL) AND (ChosenPivot->Row < Step))
+                    ChosenPivot = ChosenPivot->NextInCol;
+		if (ChosenPivot == NULL)
+		{   /* Reduced column has no elements, matrix is singular. */
+		    break;
+		}
+                PivotMag = ELEMENT_MAG(ChosenPivot);
+===============================================================================

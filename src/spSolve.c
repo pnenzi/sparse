@@ -4,18 +4,11 @@
  *  Author:                     Advising professor:
  *      Kenneth S. Kundert          Alberto Sangiovanni-Vincentelli
  *      UC Berkeley
- */
-/*! \file
+ *
  *  This file contains the forward and backward substitution routines for
  *  the sparse matrix routines.
  *
- *  Objects that begin with the \a spc prefix are considered private
- *  and should not be used.
- *
- *  \author
- *  Kenneth S. Kundert <kundert@users.sourceforge.net>
- */
-/*  >>> User accessible functions contained in this file:
+ *  >>> User accessible functions contained in this file:
  *  spSolve
  *  spSolveTransposed
  *
@@ -28,15 +21,24 @@
 /*
  *  Revision and copyright information.
  *
- *  Copyright (c) 1985-2003
- *  by Kenneth S. Kundert
+ *  Copyright (c) 1985-1993
+ *  by Kenneth S. Kundert and the University of California.
+ *
+ *  Permission to use, copy, modify, and distribute this software and
+ *  its documentation for any purpose and without fee is hereby granted,
+ *  provided that the copyright notices appear in all copies and
+ *  supporting documentation and that the authors and the University of
+ *  California are properly credited.  The authors and the University of
+ *  California make no representations as to the suitability of this
+ *  software for any purpose.  It is provided `as is', without express
+ *  or implied warranty.
  */
 
 #ifndef lint
 static char copyright[] =
-    "Sparse1.4: Copyright (c) 1985-2003 by Kenneth S. Kundert";
+    "Sparse1.3: Copyright (c) 1985-1993 by Kenneth S. Kundert";
 static char RCSid[] =
-    "@(#)$Header: /cvsroot/sparse/src/spSolve.c,v 1.3 2003/06/29 04:19:52 kundert Exp $";
+    "@(#)$Header: /cvsroot/sparse/src/spSolve.c,v 1.1.1.1 2003/06/05 07:06:31 kundert Exp $";
 #endif
 
 
@@ -67,14 +69,14 @@ static char RCSid[] =
  */
 
 #if spSEPARATED_COMPLEX_VECTORS
-static void SolveComplexMatrix( MatrixPtr,
-                        RealVector, RealVector, RealVector, RealVector );
-static void SolveComplexTransposedMatrix( MatrixPtr,
-                        RealVector, RealVector, RealVector, RealVector );
+static void SolveComplexMatrix spcARGS(( MatrixPtr,
+                        RealVector, RealVector, RealVector, RealVector ));
+static void SolveComplexTransposedMatrix spcARGS(( MatrixPtr,
+                        RealVector, RealVector, RealVector, RealVector ));
 #else
-static void SolveComplexMatrix( MatrixPtr, RealVector, RealVector );
-static void SolveComplexTransposedMatrix( MatrixPtr,
-			RealVector, RealVector );
+static void SolveComplexMatrix spcARGS(( MatrixPtr, RealVector, RealVector ));
+static void SolveComplexTransposedMatrix spcARGS(( MatrixPtr,
+			RealVector, RealVector ));
 #endif
 
 
@@ -83,35 +85,38 @@ static void SolveComplexTransposedMatrix( MatrixPtr,
 
 
 
-/*!
+/*
+ *  SOLVE MATRIX EQUATION
+ *
  *  Performs forward elimination and back substitution to find the
- *  unknown vector from the \a RHS vector and factored matrix.  This
+ *  unknown vector from the RHS vector and factored matrix.  This
  *  routine assumes that the pivots are associated with the lower
- *  triangular matrix and that the diagonal of the upper triangular
- *  matrix consists of ones.  This routine arranges the computation
+ *  triangular (L) matrix and that the diagonal of the upper triangular
+ *  (U) matrix consists of ones.  This routine arranges the computation
  *  in different way than is traditionally used in order to exploit the
  *  sparsity of the right-hand side.  See the reference in spRevision.
  *
- *  \param eMatrix
+ *  >>> Arguments:
+ *  Matrix  <input>  (char *)
  *      Pointer to matrix.
- *  \param RHS
- *      \a RHS is the input data array, the right hand side. This data is
+ *  RHS  <input>  (RealVector)
+ *      RHS is the input data array, the right hand side. This data is
  *      undisturbed and may be reused for other solves.
- *  \param Solution
- *      \a Solution is the output data array. This routine is constructed
- *      such that \a RHS and \a Solution can be the same array.
- *  \param iRHS
- *      \a iRHS is the imaginary portion of the input data array, the right
+ *  Solution  <output>  (RealVector)
+ *      Solution is the output data array. This routine is constructed such that
+ *      RHS and Solution can be the same array.
+ *  iRHS  <input>  (RealVector)
+ *      iRHS is the imaginary portion of the input data array, the right
  *      hand side. This data is undisturbed and may be reused for other solves.
  *      This argument is only necessary if matrix is complex and if
- *      \a spSEPARATED_COMPLEX_VECTOR is set true.
- *  \param iSolution
- *      \a iSolution is the imaginary portion of the output data array. This
- *      routine is constructed such that \a iRHS and \a iSolution can be
+ *      spSEPARATED_COMPLEX_VECTOR is set true.
+ *  iSolution  <output>  (RealVector)
+ *      iSolution is the imaginary portion of the output data array. This
+ *      routine is constructed such that iRHS and iSolution can be
  *      the same array.  This argument is only necessary if matrix is complex
- *      and if \a spSEPARATED_COMPLEX_VECTOR is set true.
- */
-/*  >>> Local variables:
+ *      and if spSEPARATED_COMPLEX_VECTOR is set true.
+ *
+ *  >>> Local variables:
  *  Intermediate  (RealVector)
  *      Temporary storage for use in forward elimination and backward
  *      substitution.  Commonly referred to as c, when the LU factorization
@@ -143,15 +148,10 @@ static void SolveComplexTransposedMatrix( MatrixPtr,
 /*VARARGS3*/
 
 void
-spSolve(
-    spMatrix eMatrix,
-    spREAL RHS[],
-    spREAL Solution[]
-#   if spCOMPLEX AND spSEPARATED_COMPLEX_VECTORS
-	, spREAL iRHS[]
-	, spREAL iSolution[]
-#   endif
-)
+spSolve( eMatrix, RHS, Solution IMAG_VECTORS )
+
+spMatrix eMatrix;
+RealVector  RHS, Solution IMAG_VECTORS;
 {
 MatrixPtr  Matrix = (MatrixPtr)eMatrix;
 register  ElementPtr  pElement;
@@ -235,36 +235,39 @@ void SolveComplexMatrix();
 
 
 #if spCOMPLEX
-/*!
+/*
+ *  SOLVE COMPLEX MATRIX EQUATION
+ *
  *  Performs forward elimination and back substitution to find the
  *  unknown vector from the RHS vector and factored matrix.  This
  *  routine assumes that the pivots are associated with the lower
- *  triangular matrix and that the diagonal of the upper triangular
- *  matrix consists of ones.  This routine arranges the computation
+ *  triangular (L) matrix and that the diagonal of the upper triangular
+ *  (U) matrix consists of ones.  This routine arranges the computation
  *  in different way than is traditionally used in order to exploit the
  *  sparsity of the right-hand side.  See the reference in spRevision.
  *
- *  \param Matrix
+ *  >>> Arguments:
+ *  Matrix  <input>  (char *)
  *      Pointer to matrix.
- *  \param RHS
+ *  RHS  <input>  (RealVector)
  *      RHS is the real portion of the input data array, the right hand
  *      side. This data is undisturbed and may be reused for other solves.
- *  \param Solution
+ *  Solution  <output>  (RealVector)
  *      Solution is the real portion of the output data array. This routine
  *      is constructed such that RHS and Solution can be the same
  *      array.
- *  \param iRHS
+ *  iRHS  <input>  (RealVector)
  *      iRHS is the imaginary portion of the input data array, the right
  *      hand side. This data is undisturbed and may be reused for other solves.
  *      If spSEPARATED_COMPLEX_VECTOR is set false, there is no need to
  *      supply this array.
- *  \param iSolution
+ *  iSolution  <output>  (RealVector)
  *      iSolution is the imaginary portion of the output data array. This
  *      routine is constructed such that iRHS and iSolution can be
  *      the same array.  If spSEPARATED_COMPLEX_VECTOR is set false, there is no
  *      need to supply this array.
- */
-/*  >>> Local variables:
+ *
+ *  >>> Local variables:
  *  Intermediate  (ComplexVector)
  *      Temporary storage for use in forward elimination and backward
  *      substitution.  Commonly referred to as c, when the LU factorization
@@ -285,18 +288,19 @@ void SolveComplexMatrix();
  *      Size of matrix. Made local to reduce indirection.
  *  Temp  (ComplexNumber)
  *      Temporary storage for entries in arrays.
+ *
+ *  >>> Obscure Macros
+ *  IMAG_VECTORS
+ *      Replaces itself with `, iRHS, iSolution' if the options spCOMPLEX and
+ *      spSEPARATED_COMPLEX_VECTORS are set, otherwise it disappears
+ *      without a trace.
  */
 
 static void
-SolveComplexMatrix(
-    MatrixPtr Matrix,
-    RealVector RHS,
-    RealVector Solution
-#   if spSEPARATED_COMPLEX_VECTORS
-	, RealVector iRHS
-	, RealVector iSolution
-#   endif
-)
+SolveComplexMatrix( Matrix, RHS, Solution IMAG_VECTORS )
+
+MatrixPtr  Matrix;
+RealVector  RHS, Solution IMAG_VECTORS;
 {
 register  ElementPtr  pElement;
 register  ComplexVector  Intermediate;
@@ -401,35 +405,38 @@ ComplexNumber  Temp;
 
 
 #if TRANSPOSE
-/*!
+/*
+ *  SOLVE TRANSPOSED MATRIX EQUATION
+ *
  *  Performs forward elimination and back substitution to find the
  *  unknown vector from the RHS vector and transposed factored
  *  matrix. This routine is useful when performing sensitivity analysis
  *  on a circuit using the adjoint method.  This routine assumes that
  *  the pivots are associated with the untransposed lower triangular
- *  matrix and that the diagonal of the untransposed upper
- *  triangular matrix consists of ones.
+ *  (L) matrix and that the diagonal of the untransposed upper
+ *  triangular (U) matrix consists of ones.
  *
- *  \param eMatrix
+ *  >>> Arguments:
+ *  Matrix  <input>  (char *)
  *      Pointer to matrix.
- *  \param RHS
- *      \a RHS is the input data array, the right hand side. This data is
+ *  RHS  <input>  (RealVector)
+ *      RHS is the input data array, the right hand side. This data is
  *      undisturbed and may be reused for other solves.
- *  \param Solution
- *      \a Solution is the output data array. This routine is constructed
- *      such that \a RHS and \a Solution can be the same array.
- *  \param iRHS
- *      \a iRHS is the imaginary portion of the input data array, the right
+ *  Solution  <output>  (RealVector)
+ *      Solution is the output data array. This routine is constructed such that
+ *      RHS and Solution can be the same array.
+ *  iRHS  <input>  (RealVector)
+ *      iRHS is the imaginary portion of the input data array, the right
  *      hand side. This data is undisturbed and may be reused for other solves.
- *      If \a spSEPARATED_COMPLEX_VECTOR is set false, or if matrix is real,
- *      there is no need to supply this array.
- *  \param iSolution
- *      \a iSolution is the imaginary portion of the output data array. This
- *      routine is constructed such that \a iRHS and \a iSolution can be
- *      the same array.  If \a spSEPARATED_COMPLEX_VECTOR is set false, or if
+ *      If spSEPARATED_COMPLEX_VECTOR is set false, or if matrix is real, there
+ *      is no need to supply this array.
+ *  iSolution  <output>  (RealVector)
+ *      iSolution is the imaginary portion of the output data array. This
+ *      routine is constructed such that iRHS and iSolution can be
+ *      the same array.  If spSEPARATED_COMPLEX_VECTOR is set false, or if
  *      matrix is real, there is no need to supply this array.
- */
-/*  >>> Local variables:
+ *
+ *  >>> Local variables:
  *  Intermediate  (RealVector)
  *      Temporary storage for use in forward elimination and backward
  *      substitution.  Commonly referred to as c, when the LU factorization
@@ -450,20 +457,21 @@ ComplexNumber  Temp;
  *      Size of matrix. Made local to reduce indirection.
  *  Temp  (RealNumber)
  *      Temporary storage for entries in arrays.
+ *
+ *  >>> Obscure Macros
+ *  IMAG_VECTORS
+ *      Replaces itself with `, iRHS, iSolution' if the options spCOMPLEX and
+ *      spSEPARATED_COMPLEX_VECTORS are set, otherwise it disappears
+ *      without a trace.
  */
 
 /*VARARGS3*/
 
 void
-spSolveTransposed(
-    spMatrix eMatrix,
-    spREAL  RHS[],
-    spREAL  Solution[]
-#   if spCOMPLEX AND spSEPARATED_COMPLEX_VECTORS
-	, spREAL iRHS[]
-	, spREAL iSolution[]
-#   endif
-)
+spSolveTransposed( eMatrix, RHS, Solution IMAG_VECTORS )
+
+spMatrix eMatrix;
+RealVector  RHS, Solution IMAG_VECTORS;
 {
 MatrixPtr  Matrix = (MatrixPtr)eMatrix;
 register  ElementPtr  pElement;
@@ -546,39 +554,42 @@ void SolveComplexTransposedMatrix();
 
 
 #if TRANSPOSE AND spCOMPLEX
-/*!
+/*
+ *  SOLVE COMPLEX TRANSPOSED MATRIX EQUATION
+ *
  *  Performs forward elimination and back substitution to find the
  *  unknown vector from the RHS vector and transposed factored
  *  matrix. This routine is useful when performing sensitivity analysis
  *  on a circuit using the adjoint method.  This routine assumes that
  *  the pivots are associated with the untransposed lower triangular
- *  matrix and that the diagonal of the untransposed upper
- *  triangular matrix consists of ones.
+ *  (L) matrix and that the diagonal of the untransposed upper
+ *  triangular (U) matrix consists of ones.
  *
- *  \param Matrix
+ *  >>> Arguments:
+ *  Matrix  <input>  (char *)
  *      Pointer to matrix.
- *  \param RHS
- *      \a RHS is the input data array, the right hand
+ *  RHS  <input>  (RealVector)
+ *      RHS is the input data array, the right hand
  *      side. This data is undisturbed and may be reused for other solves.
  *      This vector is only the real portion if the matrix is complex and
- *      \a spSEPARATED_COMPLEX_VECTORS is set true.
- *  \param Solution
- *      \a Solution is the real portion of the output data array. This routine
- *      is constructed such that \a RHS and \a Solution can be the same array.
+ *      spSEPARATED_COMPLEX_VECTORS is set true.
+ *  Solution  <output>  (RealVector)
+ *      Solution is the real portion of the output data array. This routine
+ *      is constructed such that RHS and Solution can be the same array.
  *      This vector is only the real portion if the matrix is complex and
- *      \a spSEPARATED_COMPLEX_VECTORS is set true.
- *  \param iRHS
- *      \a iRHS is the imaginary portion of the input data array, the right
+ *      spSEPARATED_COMPLEX_VECTORS is set true.
+ *  iRHS  <input>  (RealVector)
+ *      iRHS is the imaginary portion of the input data array, the right
  *      hand side. This data is undisturbed and may be reused for other solves.
- *      If either \a spCOMPLEX or \a spSEPARATED_COMPLEX_VECTOR is set false,
- *      there is no need to supply this array.
- *  \param iSolution
- *      \a iSolution is the imaginary portion of the output data array. This
- *      routine is constructed such that \a iRHS and \a iSolution can be
- *      the same array.  If \a spCOMPLEX or \a spSEPARATED_COMPLEX_VECTOR is set
+ *      If either spCOMPLEX or spSEPARATED_COMPLEX_VECTOR is set false, there
+ *      is no need to supply this array.
+ *  iSolution  <output>  (RealVector)
+ *      iSolution is the imaginary portion of the output data array. This
+ *      routine is constructed such that iRHS and iSolution can be
+ *      the same array.  If spCOMPLEX or spSEPARATED_COMPLEX_VECTOR is set
  *      false, there is no need to supply this array.
- */
-/*  >>> Local variables:
+ *
+ *  >>> Local variables:
  *  Intermediate  (ComplexVector)
  *      Temporary storage for use in forward elimination and backward
  *      substitution.  Commonly referred to as c, when the LU factorization
@@ -599,18 +610,19 @@ void SolveComplexTransposedMatrix();
  *      Size of matrix. Made local to reduce indirection.
  *  Temp  (ComplexNumber)
  *      Temporary storage for entries in arrays.
+ *
+ *  >>> Obscure Macros
+ *  IMAG_VECTORS
+ *      Replaces itself with `, iRHS, iSolution' if the options spCOMPLEX and
+ *      spSEPARATED_COMPLEX_VECTORS are set, otherwise it disappears
+ *      without a trace.
  */
 
 static void
-SolveComplexTransposedMatrix(
-    MatrixPtr  Matrix,
-    RealVector  RHS,
-    RealVector  Solution
-#   if spSEPARATED_COMPLEX_VECTORS
-	, RealVector iRHS
-	, RealVector iSolution
-#   endif
-)
+SolveComplexTransposedMatrix(Matrix, RHS, Solution IMAG_VECTORS )
+
+MatrixPtr  Matrix;
+RealVector  RHS, Solution IMAG_VECTORS;
 {
 register  ElementPtr  pElement;
 register  ComplexVector  Intermediate;
